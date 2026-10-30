@@ -1,0 +1,9 @@
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+build/
+DerivedData/
+Payload/
+MuseCasino.ipa
+.DS_Store
+*.muse-github-snapshot-sync.json
