@@ -6,14 +6,17 @@ import UIKit
 enum Haptics {
     static func reelStop() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        SoundEngine.shared.reelStop()
     }
 
     static func tap() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        SoundEngine.shared.tap()
     }
 
     static func win(big: Bool) {
         UINotificationFeedbackGenerator().notificationOccurred(big ? .success : .warning)
+        SoundEngine.shared.win(big: big)
     }
 }
 
@@ -24,37 +27,29 @@ private struct GlassPanelModifier: ViewModifier {
     let tint: Color?
 
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            if let tint {
-                return AnyView(
-                    content.glassEffect(.regular.tint(tint), in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                )
-            }
+        // Real Apple Liquid Glass only (.glassEffect, iOS 26) — no material fallback.
+        if let tint {
             return AnyView(
-                content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                content.glassEffect(.regular.tint(tint), in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             )
         }
         return AnyView(
-            content.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         )
     }
 }
 
 private struct GlassCapsuleModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            return AnyView(
-                content.glassEffect(.regular.interactive(), in: Capsule())
-            )
-        }
+        // Real Apple Liquid Glass only (.glassEffect, iOS 26) — no material fallback.
         return AnyView(
-            content.background(.ultraThinMaterial, in: Capsule())
+            content.glassEffect(.regular.interactive(), in: Capsule())
         )
     }
 }
 
 extension View {
-    /// Frosted Liquid Glass panel (falls back to ultra-thin material on older systems).
+    /// Real Liquid Glass panel (.glassEffect, iOS 26) — no fallback material.
     func glassPanel(cornerRadius: CGFloat = 20, tint: Color? = nil) -> some View {
         modifier(GlassPanelModifier(cornerRadius: cornerRadius, tint: tint))
     }
@@ -342,7 +337,7 @@ struct SpinButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: { SoundEngine.shared.spinStart(); action() }) {
             Text(title)
                 .font(.system(.headline, design: .default).weight(.black))
                 .tracking(1.6)

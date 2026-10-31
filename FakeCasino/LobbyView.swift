@@ -36,6 +36,7 @@ struct LobbyView: View {
     @EnvironmentObject private var wallet: WalletStore
     @State private var selectedCategory: MachineCategory?
     @State private var searchText = ""
+    @State private var soundMuted = SoundEngine.shared.muted
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -119,6 +120,7 @@ struct LobbyView: View {
                     .minimumScaleFactor(0.7)
                 Spacer()
                 BalancePill()
+                muteButton
             }
             HStack {
                 PlayMoneyBadge()
@@ -128,6 +130,22 @@ struct LobbyView: View {
                     .foregroundStyle(.white.opacity(0.55))
             }
         }
+    }
+
+    private var muteButton: some View {
+        Button {
+            soundMuted.toggle()
+            SoundEngine.shared.muted = soundMuted
+            if !soundMuted { SoundEngine.shared.tap() }
+        } label: {
+            Image(systemName: soundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.85))
+                .frame(width: 34, height: 34)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .glassCapsuleIf(true)
     }
 
     // MARK: Balance + stats card
