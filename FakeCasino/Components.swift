@@ -98,6 +98,8 @@ struct BalancePill: View {
             CoinIcon(size: 22)
             Text(wallet.balance.grouped)
                 .font(.system(.subheadline, design: .default).weight(.bold))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .animation(.easeOut(duration: 0.45), value: wallet.balance)
@@ -158,6 +160,8 @@ struct CountUpText: View {
     var body: some View {
         Text(displayed.grouped)
             .font(font)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .monospacedDigit()
             .foregroundStyle(color)
             .onAppear { run(to: value) }
