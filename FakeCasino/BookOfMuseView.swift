@@ -1,27 +1,166 @@
 import SwiftUI
 
+// MARK: - Symbol rendering
+
+/// Draws the Book of Muse symbols (book via shapes, letters via serif glyphs).
+struct BookSymbolView: View {
+    let symbol: BookSymbol
+    var size: CGFloat = 34
+
+    var body: some View {
+        switch symbol {
+        case .book:
+            BookGlyphView(size: size)
+        case .muse:
+            Image(systemName: "sparkles")
+                .font(.system(size: size * 0.95, weight: .semibold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color(red: 0.78, green: 0.55, blue: 1.0), Color(red: 0.48, green: 0.22, blue: 0.95)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        case .crown:
+            Image(systemName: "crown.fill")
+                .font(.system(size: size * 0.9, weight: .semibold))
+                .foregroundStyle(Color(red: 0.98, green: 0.80, blue: 0.30))
+        case .gem:
+            DrawnShapeView(kind: .gem, tint: Color(red: 1.0, green: 0.55, blue: 0.75), size: size)
+        case .scarab:
+            Image(systemName: "ladybug.fill")
+                .font(.system(size: size * 0.9, weight: .semibold))
+                .foregroundStyle(Color(red: 0.35, green: 0.85, blue: 0.75))
+        case .ace, .king, .queen, .jack:
+            Text(letter)
+                .font(.system(size: size * 1.05, weight: .black, design: .serif))
+                .foregroundStyle(letterColor)
+        }
+    }
+
+    private var letter: String {
+        switch symbol {
+        case .ace: return "A"
+        case .king: return "K"
+        case .queen: return "Q"
+        case .jack: return "J"
+        default: return ""
+        }
+    }
+
+    private var letterColor: Color {
+        switch symbol {
+        case .ace: return Color(red: 0.98, green: 0.82, blue: 0.35)
+        case .king: return Color(red: 0.98, green: 0.75, blue: 0.45)
+        case .queen: return Color(red: 0.88, green: 0.80, blue: 0.95)
+        default: return Color(red: 0.80, green: 0.88, blue: 0.98)
+        }
+    }
+}
+
+/// An open book drawn from shapes: two pages, a spine and a star emblem.
+struct BookGlyphView: View {
+    var size: CGFloat = 34
+
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                PageShape(flip: false)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 0.85, green: 0.62, blue: 0.95), Color(red: 0.55, green: 0.30, blue: 0.85)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                PageShape(flip: true)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 0.80, green: 0.55, blue: 0.92), Color(red: 0.50, green: 0.25, blue: 0.80)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+            .frame(width: size, height: size * 0.78)
+            Rectangle()
+                .fill(Color(red: 0.30, green: 0.12, blue: 0.55))
+                .frame(width: max(2, size * 0.07), height: size * 0.78)
+            Image(systemName: "star.fill")
+                .font(.system(size: size * 0.30, weight: .bold))
+                .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.35))
+        }
+    }
+}
+
+private struct PageShape: Shape {
+    let flip: Bool
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let inset = rect.height * 0.10
+        if !flip {
+            path.move(to: CGPoint(x: rect.maxX, y: rect.minY + inset))
+            path.addQuadCurve(
+                to: CGPoint(x: rect.minX, y: rect.minY),
+                control: CGPoint(x: rect.midX, y: rect.minY + inset * 1.6)
+            )
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.addQuadCurve(
+                to: CGPoint(x: rect.maxX, y: rect.maxY - inset),
+                control: CGPoint(x: rect.midX, y: rect.maxY - inset * 1.6)
+            )
+        } else {
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY + inset))
+            path.addQuadCurve(
+                to: CGPoint(x: rect.maxX, y: rect.minY),
+                control: CGPoint(x: rect.midX, y: rect.minY + inset * 1.6)
+            )
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addQuadCurve(
+                to: CGPoint(x: rect.minX, y: rect.maxY - inset),
+                control: CGPoint(x: rect.midX, y: rect.maxY - inset * 1.6)
+            )
+        }
+        path.closeSubpath()
+        return path
+    }
+}
+
 // MARK: - View model
 
 @MainActor
 final class BookOfMuseViewModel: ObservableObject {
+    let lineCount = 10
     let betOptions = [1, 2, 5, 10, 25, 50]
     @Published var betIndex = 2
 
     var betPerLine: Int { betOptions[betIndex] }
-    var totalBet: Int { betPerLine * SlotMath.fiveReelLines.count }
+    var totalBet: Int { betPerLine * lineCount }
     var betLocked: Bool { isSpinning || specialSymbol != nil }
 
-    @Published var displayGrid: [[BookSymbol]] = BookOfMuseEngine.randomGrid()
+    @Published var targetGrid: [[BookSymbol]]
+    @Published var expandedColumns: [[BookSymbol]]?
+    @Published var spinID = 0
+    @Published var reelDurations: [Double] = []
+    @Published var anticipationReels: Set<Int> = []
     @Published var isSpinning = false
+    @Published var highlight: Set<GridPosition> = []
     @Published var displayedWin = 0
-    @Published var highlight: Set<String> = []
-    @Published var message = "Bereit? Das Buch wartet auf dich."
+    @Published var message = "Das Buch wartet auf dich …"
     @Published var freeSpinsRemaining = 0
     @Published var freeSpinsTotalWin = 0
-    @Published var specialSymbol: BookSymbol? = nil
-    @Published var expandedReels: Set<Int> = []
+    @Published var specialSymbol: BookSymbol?
+    @Published var celebrationTier: WinTier?
+    @Published var celebrationAmount = 0
 
+    private var pendingResult: BookSpinResult?
+    private var celebrationToken = 0
     private var rng = SystemRandomNumberGenerator()
+
+    init() {
+        targetGrid = BookOfMuseEngine.randomGrid()
+    }
 
     func increaseBet() {
         if betIndex < betOptions.count - 1 { betIndex += 1 }
@@ -31,9 +170,13 @@ final class BookOfMuseViewModel: ObservableObject {
         if betIndex > 0 { betIndex -= 1 }
     }
 
+    func fillerSymbol() -> BookSymbol {
+        BookSymbol.random(using: &rng)
+    }
+
     func spin(wallet: WalletStore) {
         guard !isSpinning else { return }
-        let isFreeSpin = freeSpinsRemaining > 0
+        let isFreeSpin = specialSymbol != nil
         if isFreeSpin {
             freeSpinsRemaining -= 1
         } else {
@@ -43,168 +186,142 @@ final class BookOfMuseViewModel: ObservableObject {
             }
         }
         wallet.recordSpin()
-        isSpinning = true
-        displayedWin = 0
+        let result = BookOfMuseEngine.spin(betPerLine: betPerLine, totalBet: totalBet)
+        pendingResult = result
+        targetGrid = result.grid
+        expandedColumns = nil
         highlight = []
-        expandedReels = []
+        displayedWin = 0
+        celebrationTier = nil
+        isSpinning = true
         message = isFreeSpin ? "Freispiel läuft …" : "Die Walzen drehen …"
 
-        let result = BookOfMuseEngine.spin(betPerLine: betPerLine, totalBet: totalBet)
-        Task { await animate(to: result, wallet: wallet, wasFreeSpin: isFreeSpin) }
-    }
-
-    /// Staggered reel animation: reels stop one after another, the rest keep flickering.
-    private func animate(to result: BookSpinResult, wallet: WalletStore, wasFreeSpin: Bool) async {
-        var spinning = [Bool](repeating: true, count: 5)
-        var elapsed = 0
-        while spinning.contains(true) {
-            try? await Task.sleep(nanoseconds: 70_000_000)
-            elapsed += 70
-            var grid = displayGrid
-            for reel in 0..<5 where spinning[reel] {
-                if elapsed >= 450 + reel * 300 {
-                    spinning[reel] = false
-                    grid[reel] = result.grid[reel]
-                } else {
-                    grid[reel] = (0..<3).map { _ in BookSymbol.random(using: &rng) }
-                }
-            }
-            displayGrid = grid
+        var durations = (0..<5).map { 0.95 + Double($0) * 0.30 }
+        anticipationReels = []
+        let earlyBooks = (0..<2).reduce(0) { partial, reel in
+            partial + result.grid[reel].filter { $0 == .book }.count
         }
-        settle(result: result, wallet: wallet, wasFreeSpin: wasFreeSpin)
-    }
-
-    private func settle(result: BookSpinResult, wallet: WalletStore, wasFreeSpin: Bool) {
-        var total = result.lineWinTotal + result.scatterWin
-
-        var highlights = Set<String>()
-        for win in result.lineWins {
-            for position in win.positions {
-                highlights.insert("\(position.reel)-\(position.row)")
+        if earlyBooks == 2 {
+            anticipationReels = Set(2..<5)
+            for reel in 2..<5 {
+                durations[reel] += 0.85
             }
         }
-        if result.scatterCount >= 3 {
+        reelDurations = durations
+        spinID += 1
+    }
+
+    func finishSpin(wallet: WalletStore) {
+        guard let result = pendingResult else {
+            isSpinning = false
+            return
+        }
+        pendingResult = nil
+        let wasInFreeSpins = specialSymbol != nil
+
+        var win = result.lineWinTotal + result.scatterWin
+        var highlights = Set<GridPosition>()
+        for lineWin in result.lineWins {
+            for position in lineWin.positions {
+                highlights.insert(position)
+            }
+        }
+        if result.scatterWin > 0 {
             for reel in 0..<5 {
                 for row in 0..<3 where result.grid[reel][row] == .book {
-                    highlights.insert("\(reel)-\(row)")
+                    highlights.insert(GridPosition(reel: reel, row: row))
                 }
             }
         }
 
-        // Free-spin expanding symbol
-        if wasFreeSpin, let special = specialSymbol {
-            let expansion = BookOfMuseEngine.expandingWin(
-                grid: result.grid,
-                special: special,
-                betPerLine: betPerLine
+        // Expanding symbol during free spins.
+        var expandingAmount = 0
+        if let special = specialSymbol {
+            let expanding = BookOfMuseEngine.expandingWin(
+                grid: result.grid, special: special, betPerLine: betPerLine
             )
-            if expansion.amount > 0 {
-                total += expansion.amount
-                expandedReels = expansion.reels
-                for reel in expansion.reels {
-                    for row in 0..<3 {
-                        highlights.insert("\(reel)-\(row)")
+            if expanding.amount > 0 {
+                expandingAmount = expanding.amount
+                win += expanding.amount
+                var expanded: [[BookSymbol]] = []
+                for reel in 0..<5 {
+                    if expanding.reels.contains(reel) {
+                        expanded.append([special, special, special])
+                        for row in 0..<3 {
+                            highlights.insert(GridPosition(reel: reel, row: row))
+                        }
+                    } else {
+                        expanded.append(result.grid[reel])
                     }
                 }
+                expandedColumns = expanded
             }
         }
 
-        // Free-spin trigger / retrigger
-        var triggered = false
-        if result.scatterCount >= 3 {
-            triggered = true
+        if win > 0 {
+            wallet.addWin(win)
+            if wasInFreeSpins {
+                freeSpinsTotalWin += win
+            }
+        }
+
+        let triggered = result.scatterCount >= 3
+        if triggered {
+            freeSpinsRemaining += BookOfMuseEngine.freeSpinsAwarded
             if specialSymbol == nil {
                 specialSymbol = BookSymbol.freeSpinCandidates.randomElement()
+                freeSpinsTotalWin = 0
             }
-            freeSpinsRemaining += BookOfMuseEngine.freeSpinsAwarded
         }
-
-        if total > 0 {
-            wallet.addWin(total)
-            if wasFreeSpin {
-                freeSpinsTotalWin += total
-            }
+        if wasInFreeSpins, !triggered, freeSpinsRemaining == 0 {
+            specialSymbol = nil
         }
 
         highlight = highlights
+        displayedWin = win
         isSpinning = false
 
         if triggered {
-            if wasFreeSpin {
+            if wasInFreeSpins {
                 message = "Retrigger! +\(BookOfMuseEngine.freeSpinsAwarded) Freispiele!"
+            } else if let special = specialSymbol {
+                message = "\(BookOfMuseEngine.freeSpinsAwarded) Freispiele! Spezial-Symbol: \(special.displayName)"
             } else {
-                message = "\(result.scatterCount)× Buch! \(BookOfMuseEngine.freeSpinsAwarded) Freispiele – "
-                    + "Spezialsymbol: \(specialSymbol?.displayName ?? "")"
+                message = "\(BookOfMuseEngine.freeSpinsAwarded) Freispiele gewonnen!"
             }
-        } else if wasFreeSpin && freeSpinsRemaining == 0 {
+        } else if wasInFreeSpins, freeSpinsRemaining == 0, specialSymbol == nil {
             message = "Freispiele vorbei – Gesamtgewinn: \(freeSpinsTotalWin.grouped) Coins"
-            specialSymbol = nil
             freeSpinsTotalWin = 0
-        } else if total > 0 {
-            message = "Gewinn: \(total.grouped) Coins!"
+        } else if win > 0 {
+            if expandingAmount > 0 {
+                message = "Expanding Symbol! Gewinn: \(win.grouped) Coins!"
+            } else {
+                message = "Gewinn: \(win.grouped) Coins!"
+            }
         } else {
-            message = wasFreeSpin ? "Freispiel ohne Gewinn." : "Kein Gewinn – nochmal drehen!"
+            message = wasInFreeSpins ? "Freispiel ohne Gewinn." : "Kein Gewinn – das Buch schweigt …"
         }
 
-        if total > 0 {
-            Task { await animateWinCounter(to: total) }
-        } else {
-            displayedWin = 0
-        }
-    }
-
-    private func animateWinCounter(to target: Int) async {
-        let steps = 24
-        for step in 1...steps {
-            displayedWin = target * step / steps
-            try? await Task.sleep(nanoseconds: 30_000_000)
-        }
-        displayedWin = target
-    }
-}
-
-// MARK: - Symbol artwork (SF Symbols + text glyphs only)
-
-struct BookSymbolView: View {
-    let symbol: BookSymbol
-
-    var body: some View {
-        switch symbol {
-        case .book:
-            Image(systemName: "book.fill")
-                .font(.system(size: 30))
-                .foregroundStyle(.orange)
-        case .muse:
-            Image(systemName: "sparkles")
-                .font(.system(size: 30))
-                .foregroundStyle(.yellow)
-        case .crown:
-            Image(systemName: "crown.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(Color(red: 1.0, green: 0.78, blue: 0.25))
-        case .gem:
-            Image(systemName: "suit.diamond.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.teal)
-        case .scarab:
-            Image(systemName: "ladybug.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(Color(red: 0.85, green: 0.30, blue: 0.30))
-        case .ace:
-            letterGlyph("A", color: .white)
-        case .king:
-            letterGlyph("K", color: .white)
-        case .queen:
-            letterGlyph("Q", color: .white)
-        case .jack:
-            letterGlyph("J", color: .white)
+        if let tier = WinTier.tier(win: win, totalBet: totalBet) {
+            celebrationTier = tier
+            celebrationAmount = win
+            Haptics.win(big: true)
+            celebrationToken += 1
+            let token = celebrationToken
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_800_000_000)
+                if token == celebrationToken {
+                    celebrationTier = nil
+                }
+            }
+        } else if win > 0 {
+            Haptics.win(big: false)
         }
     }
 
-    private func letterGlyph(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 30, weight: .black, design: .serif))
-            .foregroundStyle(color)
+    func dismissCelebration() {
+        celebrationToken += 1
+        celebrationTier = nil
     }
 }
 
@@ -213,17 +330,27 @@ struct BookSymbolView: View {
 struct BookOfMuseView: View {
     @EnvironmentObject private var wallet: WalletStore
     @StateObject private var vm = BookOfMuseViewModel()
+    @State private var reelWidth: CGFloat = 360
+    @State private var showInfo = false
+
+    private let palette = MachinePalette(
+        ["#241047", "#4C1D95", "#6D28D9"], accent: "#C084FC"
+    )
+
+    private var cellHeight: CGFloat {
+        let available = reelWidth - 20 - 4 * 6
+        return min(available / 5 * 1.02, 96)
+    }
 
     var body: some View {
         ZStack {
             CasinoBackground()
             ScrollView {
-                VStack(spacing: 16) {
-                    headerRow
+                VStack(spacing: 14) {
                     if let special = vm.specialSymbol {
-                        freeSpinBanner(special: special)
+                        specialBanner(special)
                     }
-                    gridView
+                    reelFrame
                     winDisplay
                     BetSelector(
                         betPerLine: vm.betPerLine,
@@ -235,148 +362,187 @@ struct BookOfMuseView: View {
                     SpinButton(
                         title: vm.isSpinning
                             ? "DREHT …"
-                            : (vm.freeSpinsRemaining > 0 ? "FREISPIEL DREHEN (\(vm.freeSpinsRemaining))" : "DREHEN"),
+                            : (vm.specialSymbol != nil ? "FREISPIEL DREHEN (\(vm.freeSpinsRemaining))" : "DREHEN"),
                         enabled: !vm.isSpinning,
                         action: { vm.spin(wallet: wallet) }
                     )
                     RefillButton()
-                    paytableSection
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
             }
+            if let tier = vm.celebrationTier {
+                BigWinOverlay(tier: tier, amount: vm.celebrationAmount) {
+                    vm.dismissCelebration()
+                }
+            }
+        }
+        .navigationTitle("Book of Muse")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showInfo) {
+            BookPaytableSheet()
         }
     }
 
-    private var headerRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Book of Muse")
-                    .font(.system(.title2, design: .rounded).weight(.black))
-                    .foregroundStyle(.white)
-                Text("Das Buch ist Wild & Scatter")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-            Spacer()
-            BalancePill()
-        }
-    }
-
-    private func freeSpinBanner(special: BookSymbol) -> some View {
+    private func specialBanner(_ special: BookSymbol) -> some View {
         HStack(spacing: 10) {
-            BookSymbolView(symbol: special)
-                .frame(width: 34, height: 34)
+            Image(systemName: "sparkles")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color(red: 0.85, green: 0.70, blue: 1.0))
             VStack(alignment: .leading, spacing: 2) {
-                Text("FREISPIELE: noch \(vm.freeSpinsRemaining)")
-                    .font(.system(.subheadline, design: .rounded).weight(.black))
+                Text("FREISPIELE: noch \(vm.freeSpinsRemaining) · Spezial-Symbol: \(special.displayName)")
+                    .font(.system(.subheadline, design: .default).weight(.bold))
                     .foregroundStyle(.white)
-                Text("Spezialsymbol \(special.displayName) expandiert · bisher gewonnen: \(vm.freeSpinsTotalWin.grouped)")
+                Text("Bisher gewonnen: \(vm.freeSpinsTotalWin.grouped) Coins")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.8))
             }
             Spacer()
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.orange.opacity(0.35))
-        )
         .glassPanel(cornerRadius: 16)
     }
 
-    private var gridView: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<5, id: \.self) { reel in
-                VStack(spacing: 6) {
-                    ForEach(0..<3, id: \.self) { row in
-                        tile(reel: reel, row: row)
-                    }
-                }
+    private var reelFrame: some View {
+        ZStack {
+            PaletteArtwork(palette: palette, glowOpacity: 0.35)
+            StripReelView(
+                columns: vm.targetGrid,
+                rows: 3,
+                spinID: vm.spinID,
+                reelDurations: vm.reelDurations,
+                anticipationReels: vm.anticipationReels,
+                highlighted: vm.highlight,
+                overrideColumns: vm.expandedColumns,
+                cellSize: cellHeight,
+                filler: { vm.fillerSymbol() },
+                onReelStop: { _ in Haptics.reelStop() },
+                onFinished: { vm.finishSpin(wallet: wallet) }
+            ) { symbol, _, isHighlighted in
+                cellView(symbol: symbol, isHighlighted: isHighlighted)
             }
+            .padding(10)
         }
-        .padding(10)
-        .glassPanel()
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+        )
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { newWidth in
+            reelWidth = newWidth
+        }
     }
 
-    private func tile(reel: Int, row: Int) -> some View {
-        let isHighlighted = vm.highlight.contains("\(reel)-\(row)")
-        let isExpanded = vm.expandedReels.contains(reel)
-        return ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(isExpanded ? 0.22 : 0.10))
-            BookSymbolView(symbol: vm.displayGrid[reel][row])
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+    private func cellView(symbol: BookSymbol, isHighlighted: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.13), Color.black.opacity(0.18)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            BookSymbolView(symbol: symbol, size: cellHeight * 0.52)
+                .winPulse(active: isHighlighted)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(
-                    isHighlighted ? Color.yellow : Color.white.opacity(0.18),
-                    lineWidth: isHighlighted ? 2.5 : 1
+                    isHighlighted ? Color(red: 0.98, green: 0.82, blue: 0.35) : Color.white.opacity(0.10),
+                    lineWidth: isHighlighted ? 2 : 1
                 )
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 64)
-        .shadow(color: isHighlighted ? Color.yellow.opacity(0.6) : .clear, radius: 8)
+        .shadow(color: isHighlighted ? Color(red: 0.98, green: 0.82, blue: 0.35).opacity(0.55) : .clear, radius: 9)
     }
 
     private var winDisplay: some View {
-        VStack(spacing: 4) {
-            if vm.displayedWin > 0 {
-                HStack(spacing: 8) {
-                    CoinIcon(size: 26)
-                    Text("+\(vm.displayedWin.grouped)")
-                        .font(.system(size: 28, weight: .black, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.35))
-                }
+        VStack(spacing: 5) {
+            HStack(spacing: 8) {
+                CoinIcon(size: 24)
+                CountUpText(
+                    value: vm.displayedWin,
+                    font: .system(size: 26, weight: .black),
+                    color: Color(red: 1.0, green: 0.85, blue: 0.35)
+                )
             }
+            .frame(height: 30)
             Text(vm.message)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(.system(.subheadline, design: .default).weight(.semibold))
                 .foregroundStyle(.white.opacity(0.9))
                 .multilineTextAlignment(.center)
                 .frame(minHeight: 20)
         }
     }
+}
 
-    private var paytableSection: some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach([BookSymbol.muse, .crown, .gem, .scarab, .ace, .king, .queen, .jack], id: \.self) { symbol in
-                    paytableRow(symbol: symbol)
+// MARK: - Paytable sheet
+
+private struct BookPaytableSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let rows: [(BookSymbol, String)] = [
+        (.book, "20 · 200 · 1.000 · Wild + Scatter"),
+        (.muse, "10 · 50 · 250"),
+        (.crown, "8 · 30 · 150"),
+        (.gem, "5 · 20 · 100"),
+        (.scarab, "5 · 15 · 75"),
+        (.ace, "4 · 10 · 50"),
+        (.king, "4 · 10 · 50"),
+        (.queen, "3 · 8 · 40"),
+        (.jack, "3 · 8 · 40"),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                CasinoBackground()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(rows, id: \.0) { row in
+                            HStack(spacing: 12) {
+                                BookSymbolView(symbol: row.0, size: 26)
+                                    .frame(width: 40, height: 40)
+                                Text(row.0.displayName)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                Text(row.1)
+                                    .font(.subheadline)
+                                    .monospacedDigit()
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                        }
+                        Divider().overlay(Color.white.opacity(0.25))
+                        Text("Auszahlungen für 3 / 4 / 5 Gleiche auf einer Linie, als Vielfaches des Linien-Einsatzes. 10 Linien, von links nach rechts, Buch zählt als Wild und Scatter.\n\nScatter: 3+ Bücher zahlen überall das 5× / 25× / 100× des Gesamteinsatzes und starten 10 Freispiele mit einem zufälligen Expanding-Spezial-Symbol. In den Freispielen füllt das Spezial-Symbol alle Walzen, auf denen es erscheint – ab 3 Walzen zahlt es wie ein Liniengewinn. Retrigger möglich: weitere 3+ Bücher geben +10 Freispiele.")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.78))
+                        Text("Nur Spielgeld – kein Echtgeld. Keine Käufe, keine Auszahlungen.")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color(red: 0.98, green: 0.85, blue: 0.55))
+                    }
+                    .padding(20)
                 }
-                Divider().overlay(Color.white.opacity(0.3))
-                Text("Buch (Wild & Scatter): ersetzt alle Symbole. 3+ Bücher zahlen "
-                    + "5× / 25× / 100× des Gesamteinsatzes und starten 10 Freispiele mit einem zufälligen "
-                    + "Expandier-Symbol. Erscheint es in den Freispielen auf 3+ Walzen, füllt es die Walzen "
-                    + "und zahlt wie ein Liniengewinn.")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
-                Text("Auszahlungen pro Linien-Einsatz. Nur Spielgeld – kein Echtgeld.")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.85))
             }
-            .padding(.top, 8)
-        } label: {
-            Text("Auszahlung & Regeln")
-                .font(.system(.headline, design: .rounded).weight(.bold))
-                .foregroundStyle(.white)
+            .navigationTitle("Auszahlung & Regeln")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
         }
-        .tint(.white)
-        .padding()
-        .glassPanel()
-    }
-
-    private func paytableRow(symbol: BookSymbol) -> some View {
-        let table = BookSymbol.paytable[symbol] ?? [:]
-        return HStack(spacing: 10) {
-            BookSymbolView(symbol: symbol)
-                .frame(width: 30, height: 30)
-                .scaleEffect(0.75)
-            Text(symbol.displayName)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-            Spacer()
-            Text("3× \(table[3] ?? 0) · 4× \(table[4] ?? 0) · 5× \(table[5] ?? 0)")
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.85))
-        }
+        .preferredColorScheme(.dark)
     }
 }

@@ -1,22 +1,77 @@
 import SwiftUI
 
+// MARK: - Symbol rendering
+
+/// Vice Fruits symbols: drawn fruit shapes + SF Symbols.
+struct FruitSymbolView: View {
+    let symbol: FruitSymbol
+    var size: CGFloat = 34
+
+    var body: some View {
+        switch symbol {
+        case .cherry:
+            DrawnShapeView(kind: .cherry, tint: Color(red: 0.95, green: 0.25, blue: 0.35), size: size)
+        case .lemon:
+            DrawnShapeView(kind: .lemon, tint: Color(red: 1.0, green: 0.85, blue: 0.25), size: size)
+        case .grape:
+            DrawnShapeView(kind: .grape, tint: Color(red: 0.65, green: 0.40, blue: 0.95), size: size)
+        case .plum:
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color(red: 0.62, green: 0.38, blue: 0.88), Color(red: 0.38, green: 0.18, blue: 0.62)],
+                            center: .init(x: 0.35, y: 0.3),
+                            startRadius: 1,
+                            endRadius: size * 0.55
+                        )
+                    )
+                    .frame(width: size * 0.78, height: size * 0.78)
+                Ellipse()
+                    .fill(Color.white.opacity(0.35))
+                    .frame(width: size * 0.22, height: size * 0.13)
+                    .offset(x: -size * 0.14, y: -size * 0.16)
+            }
+        case .bell:
+            Image(systemName: "bell.fill")
+                .font(.system(size: size * 0.92, weight: .semibold))
+                .foregroundStyle(Color(red: 1.0, green: 0.78, blue: 0.30))
+        case .diamond:
+            DrawnShapeView(kind: .gem, tint: Color(red: 0.45, green: 0.85, blue: 1.0), size: size)
+        case .seven:
+            DrawnShapeView(kind: .seven, tint: Color(red: 1.0, green: 0.40, blue: 0.45), size: size)
+        }
+    }
+}
+
 // MARK: - View model
 
 @MainActor
 final class ViceFruitsViewModel: ObservableObject {
+    let lineCount = 10
     let betOptions = [1, 2, 5, 10, 25, 50]
     @Published var betIndex = 2
 
     var betPerLine: Int { betOptions[betIndex] }
-    var totalBet: Int { betPerLine * SlotMath.fiveReelLines.count }
+    var totalBet: Int { betPerLine * lineCount }
 
-    @Published var displayGrid: [[FruitSymbol]] = ViceFruitsEngine.randomGrid()
+    @Published var targetGrid: [[FruitSymbol]]
+    @Published var spinID = 0
+    @Published var reelDurations: [Double] = []
     @Published var isSpinning = false
+    @Published var highlight: Set<GridPosition> = []
     @Published var displayedWin = 0
-    @Published var highlight: Set<String> = []
-    @Published var message = "Früchte fallen nicht vom Baum – dreh!"
+    @Published var message = "Fruchtig, neon, Vice."
+    @Published var celebrationTier: WinTier?
+    @Published var celebrationAmount = 0
 
+    private var pendingResult: FruitSpinResult?
+    private var celebrationToken = 0
     private var rng = SystemRandomNumberGenerator()
+
+    init() {
+        targetGrid = ViceFruitsEngine.randomGrid()
+    }
 
     func increaseBet() {
         if betIndex < betOptions.count - 1 { betIndex += 1 }
@@ -26,6 +81,10 @@ final class ViceFruitsViewModel: ObservableObject {
         if betIndex > 0 { betIndex -= 1 }
     }
 
+    func fillerSymbol() -> FruitSymbol {
+        FruitSymbol.random(using: &rng)
+    }
+
     func spin(wallet: WalletStore) {
         guard !isSpinning else { return }
         guard wallet.placeBet(totalBet) else {
@@ -33,168 +92,59 @@ final class ViceFruitsViewModel: ObservableObject {
             return
         }
         wallet.recordSpin()
-        isSpinning = true
-        displayedWin = 0
-        highlight = []
-        message = "Die Walzen drehen …"
-
         let result = ViceFruitsEngine.spin(betPerLine: betPerLine)
-        Task { await animate(to: result, wallet: wallet) }
+        pendingResult = result
+        targetGrid = result.grid
+        highlight = []
+        displayedWin = 0
+        celebrationTier = nil
+        isSpinning = true
+        message = "Die Walzen drehen …"
+        reelDurations = (0..<5).map { 0.9 + Double($0) * 0.28 }
+        spinID += 1
     }
 
-    private func animate(to result: FruitSpinResult, wallet: WalletStore) async {
-        var spinning = [Bool](repeating: true, count: 5)
-        var elapsed = 0
-        while spinning.contains(true) {
-            try? await Task.sleep(nanoseconds: 70_000_000)
-            elapsed += 70
-            var grid = displayGrid
-            for reel in 0..<5 where spinning[reel] {
-                if elapsed >= 450 + reel * 300 {
-                    spinning[reel] = false
-                    grid[reel] = result.grid[reel]
-                } else {
-                    grid[reel] = (0..<3).map { _ in FruitSymbol.random(using: &rng) }
-                }
-            }
-            displayGrid = grid
+    func finishSpin(wallet: WalletStore) {
+        guard let result = pendingResult else {
+            isSpinning = false
+            return
         }
-
-        var highlights = Set<String>()
-        for win in result.lineWins {
-            for position in win.positions {
-                highlights.insert("\(position.reel)-\(position.row)")
+        pendingResult = nil
+        var highlights = Set<GridPosition>()
+        for lineWin in result.lineWins {
+            for position in lineWin.positions {
+                highlights.insert(position)
             }
+        }
+        let win = result.totalWin
+        if win > 0 {
+            wallet.addWin(win)
         }
         highlight = highlights
+        displayedWin = win
         isSpinning = false
+        message = win > 0 ? "Gewinn: \(win.grouped) Coins!" : "Kein Gewinn – nochmal drehen!"
 
-        if result.totalWin > 0 {
-            wallet.addWin(result.totalWin)
-            message = "Gewinn: \(result.totalWin.grouped) Coins!"
-            let target = result.totalWin
-            Task { await animateWinCounter(to: target) }
-        } else {
-            displayedWin = 0
-            message = "Kein Gewinn – die nächste Sieben wartet."
-        }
-    }
-
-    private func animateWinCounter(to target: Int) async {
-        let steps = 24
-        for step in 1...steps {
-            displayedWin = target * step / steps
-            try? await Task.sleep(nanoseconds: 30_000_000)
-        }
-        displayedWin = target
-    }
-}
-
-// MARK: - Symbol artwork (hand-drawn shapes + SF Symbols, no emojis)
-
-struct FruitSymbolView: View {
-    let symbol: FruitSymbol
-
-    var body: some View {
-        switch symbol {
-        case .cherry:
-            CherryShape()
-        case .lemon:
-            LemonShape()
-        case .grape:
-            GrapeShape()
-        case .plum:
-            PlumShape()
-        case .bell:
-            Image(systemName: "bell.fill")
-                .font(.system(size: 30))
-                .foregroundStyle(Color(red: 1.0, green: 0.78, blue: 0.25))
-        case .diamond:
-            Image(systemName: "suit.diamond.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.cyan)
-        case .seven:
-            Text("7")
-                .font(.system(size: 38, weight: .black, design: .rounded))
-                .foregroundStyle(.red)
-        }
-    }
-}
-
-private struct CherryShape: View {
-    var body: some View {
-        ZStack {
-            Capsule()
-                .fill(Color.green)
-                .frame(width: 3, height: 22)
-                .rotationEffect(.degrees(20))
-                .offset(x: 5, y: -9)
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(.green)
-                .offset(x: 11, y: -17)
-            Circle()
-                .fill(Color.red.gradient)
-                .frame(width: 20, height: 20)
-                .offset(x: -7, y: 9)
-            Circle()
-                .fill(Color.red.gradient)
-                .frame(width: 17, height: 17)
-                .offset(x: 9, y: 13)
-        }
-        .frame(width: 44, height: 44)
-    }
-}
-
-private struct LemonShape: View {
-    var body: some View {
-        ZStack {
-            Circle().fill(Color.yellow.gradient).frame(width: 9, height: 9).offset(x: -19, y: 0)
-            Circle().fill(Color.yellow.gradient).frame(width: 9, height: 9).offset(x: 19, y: 0)
-            Ellipse().fill(Color.yellow.gradient).frame(width: 38, height: 25)
-            Ellipse().fill(Color.white.opacity(0.25)).frame(width: 20, height: 8).offset(y: -5)
-        }
-        .frame(width: 44, height: 44)
-    }
-}
-
-private struct GrapeShape: View {
-    var body: some View {
-        VStack(spacing: 1) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(.green)
-            dotRow(3)
-            dotRow(2)
-            dotRow(1)
-        }
-        .frame(width: 44, height: 44)
-    }
-
-    private func dotRow(_ count: Int) -> some View {
-        HStack(spacing: 1) {
-            ForEach(0..<count, id: \.self) { _ in
-                Circle()
-                    .fill(Color.purple.gradient)
-                    .frame(width: 10, height: 10)
+        if let tier = WinTier.tier(win: win, totalBet: totalBet) {
+            celebrationTier = tier
+            celebrationAmount = win
+            Haptics.win(big: true)
+            celebrationToken += 1
+            let token = celebrationToken
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_800_000_000)
+                if token == celebrationToken {
+                    celebrationTier = nil
+                }
             }
+        } else if win > 0 {
+            Haptics.win(big: false)
         }
     }
-}
 
-private struct PlumShape: View {
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color(red: 0.45, green: 0.25, blue: 0.75).gradient)
-                .frame(width: 32, height: 32)
-                .offset(y: 3)
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(.green)
-                .offset(x: 5, y: -15)
-        }
-        .frame(width: 44, height: 44)
+    func dismissCelebration() {
+        celebrationToken += 1
+        celebrationTier = nil
     }
 }
 
@@ -203,14 +153,24 @@ private struct PlumShape: View {
 struct ViceFruitsView: View {
     @EnvironmentObject private var wallet: WalletStore
     @StateObject private var vm = ViceFruitsViewModel()
+    @State private var reelWidth: CGFloat = 360
+    @State private var showInfo = false
+
+    private let palette = MachinePalette(
+        ["#2B0A1E", "#7C1D5A", "#B02A6B"], accent: "#FF5C8A"
+    )
+
+    private var cellHeight: CGFloat {
+        let available = reelWidth - 20 - 4 * 6
+        return min(available / 5 * 1.02, 96)
+    }
 
     var body: some View {
         ZStack {
             CasinoBackground()
             ScrollView {
-                VStack(spacing: 16) {
-                    headerRow
-                    gridView
+                VStack(spacing: 14) {
+                    reelFrame
                     winDisplay
                     BetSelector(
                         betPerLine: vm.betPerLine,
@@ -225,123 +185,160 @@ struct ViceFruitsView: View {
                         action: { vm.spin(wallet: wallet) }
                     )
                     RefillButton()
-                    paytableSection
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
             }
-        }
-    }
-
-    private var headerRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Vice Fruits")
-                    .font(.system(.title2, design: .rounded).weight(.black))
-                    .foregroundStyle(.white)
-                Text("Der fruchtige Klassiker")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-            Spacer()
-            BalancePill()
-        }
-    }
-
-    private var gridView: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<5, id: \.self) { reel in
-                VStack(spacing: 6) {
-                    ForEach(0..<3, id: \.self) { row in
-                        tile(reel: reel, row: row)
-                    }
+            if let tier = vm.celebrationTier {
+                BigWinOverlay(tier: tier, amount: vm.celebrationAmount) {
+                    vm.dismissCelebration()
                 }
             }
         }
-        .padding(10)
-        .glassPanel()
+        .navigationTitle("Vice Fruits")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showInfo) {
+            VicePaytableSheet()
+        }
     }
 
-    private func tile(reel: Int, row: Int) -> some View {
-        let isHighlighted = vm.highlight.contains("\(reel)-\(row)")
-        return ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.10))
-            FruitSymbolView(symbol: vm.displayGrid[reel][row])
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+    private var reelFrame: some View {
+        ZStack {
+            PaletteArtwork(palette: palette, glowOpacity: 0.35)
+            StripReelView(
+                columns: vm.targetGrid,
+                rows: 3,
+                spinID: vm.spinID,
+                reelDurations: vm.reelDurations,
+                anticipationReels: [],
+                highlighted: vm.highlight,
+                cellSize: cellHeight,
+                filler: { vm.fillerSymbol() },
+                onReelStop: { _ in Haptics.reelStop() },
+                onFinished: { vm.finishSpin(wallet: wallet) }
+            ) { symbol, _, isHighlighted in
+                cellView(symbol: symbol, isHighlighted: isHighlighted)
+            }
+            .padding(10)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+        )
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { newWidth in
+            reelWidth = newWidth
+        }
+    }
+
+    private func cellView(symbol: FruitSymbol, isHighlighted: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.13), Color.black.opacity(0.18)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            FruitSymbolView(symbol: symbol, size: cellHeight * 0.52)
+                .winPulse(active: isHighlighted)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(
-                    isHighlighted ? Color.yellow : Color.white.opacity(0.18),
-                    lineWidth: isHighlighted ? 2.5 : 1
+                    isHighlighted ? Color(red: 0.98, green: 0.82, blue: 0.35) : Color.white.opacity(0.10),
+                    lineWidth: isHighlighted ? 2 : 1
                 )
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 64)
-        .shadow(color: isHighlighted ? Color.yellow.opacity(0.6) : .clear, radius: 8)
+        .shadow(color: isHighlighted ? Color(red: 0.98, green: 0.82, blue: 0.35).opacity(0.55) : .clear, radius: 9)
     }
 
     private var winDisplay: some View {
-        VStack(spacing: 4) {
-            if vm.displayedWin > 0 {
-                HStack(spacing: 8) {
-                    CoinIcon(size: 26)
-                    Text("+\(vm.displayedWin.grouped)")
-                        .font(.system(size: 28, weight: .black, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.35))
-                }
+        VStack(spacing: 5) {
+            HStack(spacing: 8) {
+                CoinIcon(size: 24)
+                CountUpText(
+                    value: vm.displayedWin,
+                    font: .system(size: 26, weight: .black),
+                    color: Color(red: 1.0, green: 0.85, blue: 0.35)
+                )
             }
+            .frame(height: 30)
             Text(vm.message)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .font(.system(.subheadline, design: .default).weight(.semibold))
                 .foregroundStyle(.white.opacity(0.9))
                 .multilineTextAlignment(.center)
                 .frame(minHeight: 20)
         }
     }
+}
 
-    private var paytableSection: some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach([FruitSymbol.seven, .diamond, .bell, .grape, .plum, .lemon, .cherry], id: \.self) { symbol in
-                    paytableRow(symbol: symbol)
+// MARK: - Paytable sheet
+
+private struct VicePaytableSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let rows: [(FruitSymbol, String)] = [
+        (.seven, "50 · 200 · 1.000"),
+        (.diamond, "25 · 100 · 500"),
+        (.bell, "10 · 40 · 150"),
+        (.grape, "5 · 20 · 80"),
+        (.plum, "4 · 15 · 60"),
+        (.lemon, "3 · 10 · 40"),
+        (.cherry, "ab 2: 2 · 5 · 15 · 50"),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                CasinoBackground()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(rows, id: \.0) { row in
+                            HStack(spacing: 12) {
+                                FruitSymbolView(symbol: row.0, size: 26)
+                                    .frame(width: 40, height: 40)
+                                Text(row.0.displayName)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                Text(row.1)
+                                    .font(.subheadline)
+                                    .monospacedDigit()
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                        }
+                        Divider().overlay(Color.white.opacity(0.25))
+                        Text("Auszahlungen für 3 / 4 / 5 Gleiche auf einer Linie (Kirsche schon ab 2), als Vielfaches des Linien-Einsatzes. 10 Linien, von links nach rechts. Keine Wilds, keine Scatter – purer Frucht-Klassiker.")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.78))
+                        Text("Nur Spielgeld – kein Echtgeld. Keine Käufe, keine Auszahlungen.")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color(red: 0.98, green: 0.85, blue: 0.55))
+                    }
+                    .padding(20)
                 }
-                Text("Kirschen zahlen schon ab 2 gleichen Symbolen auf einer Linie. "
-                    + "Auszahlungen pro Linien-Einsatz. Nur Spielgeld – kein Echtgeld.")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
             }
-            .padding(.top, 8)
-        } label: {
-            Text("Auszahlung & Regeln")
-                .font(.system(.headline, design: .rounded).weight(.bold))
-                .foregroundStyle(.white)
+            .navigationTitle("Auszahlung & Regeln")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
         }
-        .tint(.white)
-        .padding()
-        .glassPanel()
-    }
-
-    private func paytableRow(symbol: FruitSymbol) -> some View {
-        let table = FruitSymbol.paytable[symbol] ?? [:]
-        return HStack(spacing: 10) {
-            FruitSymbolView(symbol: symbol)
-                .frame(width: 30, height: 30)
-                .scaleEffect(0.7)
-            Text(symbol.displayName)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-            Spacer()
-            Text(paytableText(table))
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.85))
-        }
-    }
-
-    private func paytableText(_ table: [Int: Int]) -> String {
-        var parts: [String] = []
-        if let two = table[2] { parts.append("2× \(two)") }
-        parts.append("3× \(table[3] ?? 0)")
-        parts.append("4× \(table[4] ?? 0)")
-        parts.append("5× \(table[5] ?? 0)")
-        return parts.joined(separator: " · ")
+        .preferredColorScheme(.dark)
     }
 }
