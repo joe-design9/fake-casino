@@ -97,6 +97,21 @@ struct StripReelView<Item: Equatable, Cell: View>: View {
             } else {
                 staticColumn(reel)
             }
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0.38), location: 0),
+                            .init(color: .clear, location: 0.30),
+                            .init(color: .clear, location: 0.70),
+                            .init(color: .black.opacity(0.38), location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(height: viewportHeight)
+                .allowsHitTesting(false)
         }
         .frame(maxWidth: .infinity)
         .frame(height: viewportHeight)
@@ -120,10 +135,10 @@ struct StripReelView<Item: Equatable, Cell: View>: View {
                 cell(strip[index], GridPosition(reel: reel, row: min(index, rows - 1)), false)
                     .frame(maxWidth: .infinity)
                     .frame(height: cellSize)
-                    .scaleEffect(y: stopped ? 1.0 : 1.10)
             }
         }
         .offset(y: offsets.indices.contains(reel) ? offsets[reel] : 0)
+        .blur(radius: stopped ? 0 : 2.4)
     }
 
     private func staticColumn(_ reel: Int) -> some View {
@@ -181,10 +196,12 @@ struct StripReelView<Item: Equatable, Cell: View>: View {
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
                 guard token == spinID, spinning else { return }
-                stoppedFlags[reel] = true
+                withAnimation(.easeOut(duration: 0.15)) {
+                    stoppedFlags[reel] = true
+                }
                 onReelStop(reel)
-                bounce[reel] = 6
-                withAnimation(.spring(response: 0.30, dampingFraction: 0.42)) {
+                bounce[reel] = 3.5
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.55)) {
                     bounce[reel] = 0
                 }
                 if stoppedFlags.allSatisfy({ $0 }) {

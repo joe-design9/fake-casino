@@ -187,7 +187,7 @@ struct LobbyView: View {
             }
         }
         .padding(16)
-        .glassPanel(cornerRadius: 20)
+        .glassPanel(cornerRadius: 20, tint: Color(red: 0.45, green: 0.30, blue: 0.90).opacity(0.14))
     }
 
     private func statCell(title: String, value: String) -> some View {
@@ -239,20 +239,18 @@ struct LobbyView: View {
                 .foregroundStyle(isActive ? Color(red: 0.20, green: 0.12, blue: 0.01) : Color.white.opacity(0.85))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(
-                    Capsule().fill(
-                        isActive
-                            ? AnyShapeStyle(LinearGradient(
+                .background {
+                    if isActive {
+                        Capsule().fill(
+                            LinearGradient(
                                 colors: [Color(red: 1.0, green: 0.88, blue: 0.45), Color(red: 0.88, green: 0.66, blue: 0.20)],
                                 startPoint: .top,
                                 endPoint: .bottom
-                            ))
-                            : AnyShapeStyle(Color.white.opacity(0.10))
-                    )
-                )
-                .overlay(
-                    Capsule().strokeBorder(Color.white.opacity(isActive ? 0 : 0.14), lineWidth: 1)
-                )
+                            )
+                        )
+                    }
+                }
+                .glassCapsuleIf(!isActive)
         }
         .buttonStyle(.plain)
     }
@@ -344,14 +342,7 @@ struct SlotTileView: View {
             }
             .padding(11)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.055))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-        )
+        .glassPanel(cornerRadius: 18)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }

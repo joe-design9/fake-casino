@@ -21,9 +21,15 @@ enum Haptics {
 
 private struct GlassPanelModifier: ViewModifier {
     let cornerRadius: CGFloat
+    let tint: Color?
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
+            if let tint {
+                return AnyView(
+                    content.glassEffect(.regular.tint(tint), in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                )
+            }
             return AnyView(
                 content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             )
@@ -34,10 +40,33 @@ private struct GlassPanelModifier: ViewModifier {
     }
 }
 
+private struct GlassCapsuleModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            return AnyView(
+                content.glassEffect(.regular.interactive(), in: Capsule())
+            )
+        }
+        return AnyView(
+            content.background(.ultraThinMaterial, in: Capsule())
+        )
+    }
+}
+
 extension View {
     /// Frosted Liquid Glass panel (falls back to ultra-thin material on older systems).
-    func glassPanel(cornerRadius: CGFloat = 20) -> some View {
-        modifier(GlassPanelModifier(cornerRadius: cornerRadius))
+    func glassPanel(cornerRadius: CGFloat = 20, tint: Color? = nil) -> some View {
+        modifier(GlassPanelModifier(cornerRadius: cornerRadius, tint: tint))
+    }
+
+    /// Interactive Liquid Glass capsule, applied only when `active` is true.
+    @ViewBuilder
+    func glassCapsuleIf(_ active: Bool) -> some View {
+        if active {
+            modifier(GlassCapsuleModifier())
+        } else {
+            self
+        }
     }
 }
 
@@ -107,7 +136,7 @@ struct BalancePill: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .glassPanel(cornerRadius: 20)
+        .glassPanel(cornerRadius: 20, tint: Color(red: 0.85, green: 0.62, blue: 0.15).opacity(0.16))
     }
 }
 
@@ -130,13 +159,19 @@ struct CasinoBackground: View {
                 endPoint: .bottom
             )
             RadialGradient(
-                colors: [Color(red: 0.45, green: 0.20, blue: 0.75).opacity(0.28), .clear],
+                colors: [Color(red: 0.45, green: 0.20, blue: 0.75).opacity(0.45), .clear],
                 center: .top,
                 startRadius: 10,
                 endRadius: 420
             )
             RadialGradient(
-                colors: [Color(red: 0.85, green: 0.62, blue: 0.15).opacity(0.10), .clear],
+                colors: [Color(red: 0.85, green: 0.25, blue: 0.55).opacity(0.20), .clear],
+                center: .trailing,
+                startRadius: 10,
+                endRadius: 340
+            )
+            RadialGradient(
+                colors: [Color(red: 0.85, green: 0.62, blue: 0.15).opacity(0.18), .clear],
                 center: .bottomLeading,
                 startRadius: 10,
                 endRadius: 380
@@ -367,7 +402,7 @@ struct BetSelector: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .glassPanel(cornerRadius: 18)
+        .glassPanel(cornerRadius: 18, tint: Color(red: 0.45, green: 0.30, blue: 0.90).opacity(0.14))
     }
 
     private func stepButton(systemName: String, disabled: Bool, action: @escaping () -> Void) -> some View {
