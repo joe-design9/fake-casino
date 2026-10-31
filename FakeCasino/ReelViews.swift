@@ -118,7 +118,8 @@ struct StripReelView<Item: Equatable, Cell: View>: View {
         return VStack(spacing: spacing) {
             ForEach(strip.indices, id: \.self) { index in
                 cell(strip[index], GridPosition(reel: reel, row: min(index, rows - 1)), false)
-                    .frame(maxWidth: .infinity, height: cellSize)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: cellSize)
                     .scaleEffect(y: stopped ? 1.0 : 1.10)
             }
         }
@@ -132,9 +133,10 @@ struct StripReelView<Item: Equatable, Cell: View>: View {
                 if source.indices.contains(reel), source[reel].indices.contains(row) {
                     let position = GridPosition(reel: reel, row: row)
                     cell(source[reel][row], position, highlighted.contains(position))
-                        .frame(maxWidth: .infinity, height: cellSize)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: cellSize)
                 } else {
-                    Color.clear.frame(maxWidth: .infinity, height: cellSize)
+                    Color.clear.frame(maxWidth: .infinity).frame(height: cellSize)
                 }
             }
         }
