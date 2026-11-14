@@ -79,3 +79,75 @@ FakeCasino/
 
 **Disclaimer:** Ein Unterhaltungsspiel ohne Echtgeld. Gewinne sind Spielgeld-Coins
 ohne jeden realen Wert.
+
+## GOLDKRONE Spielhalle
+
+**GOLDKRONE Spielhalle** ist eine eigene native iOS-App (SwiftUI) im Look einer
+deutschen Spielhalle: dunkles Navy, goldene Rahmen, LED-Anzeigen und ein roter
+RISIKO-Knopf. Sie liegt im Ordner `spielhalle/` und hat nichts mit Muse Casino
+zu tun. Bundle-ID: `dev.joe.goldkrone`. Anzeigename: **Goldkrone**.
+
+Es ist **ausschließlich Spielgeld**. Keine Käufe, keine Werbung, keine
+Auszahlungen, keine Links nach draußen. In der App steht dauerhaft
+„Nur Spielgeld – keine echten Gewinne“. Die Währung heißt **Kronentaler (KT)**
+und hat keinen realen Wert. Das Maskottchen ist eine goldene Krone.
+
+### Automaten
+
+| Automat | Mechanik |
+|---|---|
+| **Fruchtfeuer** | 5×3, 10 Linien. Kirsche, Zitrone, Pflaume, Traube, Melone, Glocke, BAR und Sieben. Kirschen zahlen ab 2. |
+| **Buch der Sphinx** | 5×3, 10 Linien. Das Buch ist Wild und Scatter. 3+ Bücher starten **10 Freispiele** mit einem zufälligen Expandier-Symbol, inklusive Retrigger. |
+| **Joker Sterne** | 5×3, 5 Linien. Joker ist Wild, Sterne zahlen irgendwo auf den Walzen. |
+
+Dazu: Einsatzstufen von 10 bis 1.000 KT, Turbo, Autoplay (10/25/50/100, Stopp bei
+Freispielen, großem Gewinn ab 15× oder leerem Guthaben), **Risikoleiter** und
+**Kartenrisiko** (Rot/Schwarz, die letzten 6 Karten). Ab 15× Einsatz gibt es
+„GROSSER GEWINN“, ab 50× „MEGA GEWINN“.
+
+Startguthaben: **5.000 KT**. Täglicher Bonus 1.000 KT, mit Serie bis 2.200 KT.
+Liegt das Guthaben unter dem Mindesteinsatz, gibt es eine gratis Auffüllung.
+Statistik: Drehungen, Einsatz, Gewinn, größter Gewinn, Quote je Automat.
+Ton und Haptik lassen sich in der Halle abschalten. Klänge werden im Gerät
+erzeugt, es gibt keine fremden Audiodateien.
+
+Die Auszahlungsquote jedes Automaten liegt bei etwa **95 %** (Zielband 93–97 %,
+Trefferquote etwa 25–35 %). Das prüft ein fest gesäter Simulationstest im
+Target `GoldkroneTests`.
+
+### IPA installieren (Sideloadly / AltStore)
+
+Die Workflow-Datei `.github/workflows/build-goldkrone.yml` baut bei Änderungen
+unter `spielhalle/` eine **unsignierte** `Goldkrone.ipa` und hängt sie zusammen
+mit `Goldkrone-screenshots.zip` an ein GitHub-Prerelease.
+
+1. `Goldkrone.ipa` aus dem Prerelease oder dem Actions-Artefakt laden.
+2. iPhone per Kabel verbinden.
+3. **Sideloadly** (oder AltStore) öffnen, die IPA hineinziehen, eine kostenlose
+   Apple-ID eintragen und starten. Das Tool signiert die App mit deinem Zertifikat.
+4. Auf dem iPhone: *Einstellungen → Allgemein → VPN & Geräteverwaltung* → das
+   Entwicklerzertifikat **vertrauen**.
+5. Goldkrone liegt auf dem Home-Bildschirm.
+
+Hinweise zum kostenlosen Signieren:
+
+- Die Signatur läuft nach **7 Tagen** ab. Danach erneut mit Sideloadly installieren
+  oder in AltStore „Refresh“ tippen. Das Guthaben bleibt bei gleicher Bundle-ID
+  erhalten.
+- Es ist ein Unterhaltungsspiel. Kronentaler kann man nicht kaufen und nicht
+  auszahlen.
+
+### Selbst bauen
+
+```bash
+open spielhalle/Goldkrone.xcodeproj
+```
+
+Scheme **Goldkrone**, iPhone wählen, ausführen. Für einen Unsigned-Build wie in
+der CI:
+
+```bash
+xcodebuild -project spielhalle/Goldkrone.xcodeproj -scheme Goldkrone \
+  -configuration Release -sdk iphoneos \
+  -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+```
