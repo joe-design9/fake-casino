@@ -197,13 +197,14 @@ private struct GameTile: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Text("SPIELEN")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
                     .foregroundStyle(.black)
                     .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .minimumScaleFactor(1)
+                    .frame(width: 78, height: 30)
                     .background(Capsule().fill(GK.goldFill))
+                    .fixedSize(horizontal: true, vertical: true)
+                    .layoutPriority(2)
             }
             .padding(12)
             .background(
