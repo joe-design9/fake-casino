@@ -60,7 +60,8 @@ final class SoundEngine {
 
     private func schedule(seconds: Double, sample: (Double) -> Double) {
         guard enabled, seconds > 0, seconds < 3 else { return }
-        let run = { self.play(self.render(seconds: seconds, sample: sample)) }
+        let data = render(seconds: seconds, sample: sample)
+        let run = { self.play(data) }
         if Thread.isMainThread {
             run()
         } else {
