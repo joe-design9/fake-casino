@@ -180,17 +180,22 @@ private struct GameTile: View {
                 HStack(spacing: 4) {
                     ForEach(previewSymbols, id: \.self) { symbol in
                         SymbolTile(id: symbol, highlighted: glow && symbol == previewSymbols[0])
-                            .frame(width: 46, height: 46)
+                            .frame(width: 40, height: 40)
                     }
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(game.title)
-                        .font(.system(size: 18, weight: .black, design: .serif))
+                        .font(.system(size: 17, weight: .black, design: .serif))
                         .foregroundStyle(GK.ivory)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                     Text(game.subtitle)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(GK.gold.opacity(0.9))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
                 }
+                .layoutPriority(1)
                 Spacer()
                 Text("SPIELEN")
                     .font(.system(size: 11, weight: .heavy, design: .rounded))
