@@ -5,16 +5,14 @@ final class RTPSimulationTests: XCTestCase {
     func testFruchtfeuerKnownBellLine() {
         let grid = [
             ["cherry", "bell", "lemon"],
-            ["lemon", "bell", "plum"],
-            ["grape", "bell", "cherry"],
-            ["plum", "melon", "bar"],
-            ["lemon", "grape", "cherry"]
+            ["lemon", "bell", "orange"],
+            ["plum", "bell", "cherry"]
         ]
         let result = FruchtfeuerEngine.evaluate(grid: grid, totalBet: 100)
         XCTAssertEqual(result.lineWins.count, 1)
         XCTAssertEqual(result.lineWins[0].symbolID, "bell")
         XCTAssertEqual(result.lineWins[0].count, 3)
-        XCTAssertEqual(result.total, 700)
+        XCTAssertEqual(result.total, 95 * 20)
     }
 
     func testSphinxThreeBooksPayScatterAndBestWild() {

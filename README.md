@@ -96,7 +96,7 @@ und hat keinen realen Wert. Das Maskottchen ist eine goldene Krone.
 
 | Automat | Mechanik |
 |---|---|
-| **Fruchtfeuer** | 5×3, 10 Linien. Kirsche, Zitrone, Pflaume, Traube, Melone, Glocke, BAR und Sieben. Kirschen zahlen ab 2. |
+| **Fruchtfeuer** | 3×3, 5 Linien. Kirsche, Zitrone, Orange, Pflaume, Melone, Glocke und Sieben. Kirschen zahlen ab 2. |
 | **Buch der Sphinx** | 5×3, 10 Linien. Das Buch ist Wild und Scatter. 3+ Bücher starten **10 Freispiele** mit einem zufälligen Expandier-Symbol, inklusive Retrigger. |
 | **Joker Sterne** | 5×3, 5 Linien. Joker ist Wild, Sterne zahlen irgendwo auf den Walzen. |
 

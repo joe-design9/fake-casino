@@ -19,7 +19,7 @@ struct RootView: View {
     init() {
         let shot = Screenshot.current
         _game = State(initialValue: shot?.game)
-        _showDisclaimer = State(initialValue: shot == nil && !WalletStore.shared.disclaimerAccepted)
+        _showDisclaimer = State(initialValue: shot == nil && !LaunchFlags.uiTest && !WalletStore.shared.disclaimerAccepted)
     }
 
     var body: some View {

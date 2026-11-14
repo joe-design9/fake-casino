@@ -14,25 +14,35 @@ struct SlotGameView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let reelHeight = min(geo.size.width / 1.22, geo.size.height * 0.46)
+            let landscape = geo.size.width > geo.size.height + 40
+            let reelHeight = landscape
+                ? min(geo.size.height - 150, geo.size.width * 0.42)
+                : min(geo.size.width / 1.15, geo.size.height * 0.42)
             ZStack {
                 ArcadeBackground()
-                VStack(spacing: 8) {
-                    header
-                    ledRow
-                    if session.freeSpinTotal > 0 {
-                        freeSpinBanner
+                Group {
+                    if landscape {
+                        HStack(alignment: .top, spacing: 10) {
+                            VStack(spacing: 8) {
+                                header
+                                ledRow
+                                if session.freeSpinTotal > 0 { freeSpinBanner }
+                                bezel.frame(height: max(160, reelHeight))
+                                statusLine
+                            }
+                            controls.frame(width: min(300, geo.size.width * 0.32))
+                        }
+                    } else {
+                        VStack(spacing: 8) {
+                            header
+                            ledRow
+                            if session.freeSpinTotal > 0 { freeSpinBanner }
+                            bezel.frame(height: max(170, reelHeight))
+                            statusLine
+                            controls
+                            Spacer(minLength: 0)
+                        }
                     }
-                    bezel
-                        .frame(height: max(180, reelHeight))
-                    Text(session.statusText)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(GK.gold)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .frame(maxWidth: .infinity)
-                    controls
-                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
@@ -51,6 +61,15 @@ struct SlotGameView: View {
         }
     }
 
+    private var statusLine: some View {
+        Text(session.statusText)
+            .font(.system(size: 14, weight: .bold, design: .rounded))
+            .foregroundStyle(GK.gold)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity)
+    }
+
     private var header: some View {
         HStack(spacing: 10) {
             Button(action: onExit) {
@@ -61,6 +80,7 @@ struct SlotGameView: View {
                     .background(Circle().fill(Color.black.opacity(0.35)))
             }
             .accessibilityLabel("Zurück zur Halle")
+            .accessibilityIdentifier("back-button")
             VStack(alignment: .leading, spacing: 0) {
                 Text(session.game.title)
                     .font(.system(size: 18, weight: .black, design: .serif))
@@ -69,6 +89,12 @@ struct SlotGameView: View {
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(GK.ivory.opacity(0.65))
             }
+            Text("Stufe \(wallet.level)")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(GK.goldFill))
             Spacer()
             Button {
                 session.overlay = .paytable
@@ -109,13 +135,18 @@ struct SlotGameView: View {
 
     private var bezel: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.black.opacity(0.88))
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(GK.goldFill, lineWidth: 3)
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(GK.goldDark, lineWidth: 6)
-                .padding(5)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(white: 0.96), Color(white: 0.78), Color(white: 0.92)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(white: 0.35), lineWidth: 3)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                .padding(4)
             VStack {
                 lampRow
                 Spacer()
@@ -126,6 +157,7 @@ struct SlotGameView: View {
             ReelBoard(
                 columns: session.grid,
                 pool: session.game.pool,
+                lines: session.game.lines,
                 spinning: session.spinning,
                 spinID: session.spinID,
                 turbo: session.turbo,
@@ -155,19 +187,27 @@ struct SlotGameView: View {
     private var controls: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                ArcadeButton(title: "−", disabled: !session.canSpin) { session.shiftBet(-1) }
-                    .frame(width: 54)
-                VStack(spacing: 0) {
-                    Text("EINSATZ")
-                        .font(.system(size: 9, weight: .heavy, design: .rounded))
-                        .foregroundStyle(GK.gold.opacity(0.8))
-                    Text("\(KT.string(session.totalBet)) KT")
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundStyle(GK.ledAmber)
+                Button {
+                    session.overlay = .stake
+                } label: {
+                    VStack(spacing: 0) {
+                        Text("EINSATZ")
+                            .font(.system(size: 9, weight: .heavy, design: .rounded))
+                            .foregroundStyle(GK.gold.opacity(0.8))
+                        Text("\(KT.string(session.totalBet)) KT")
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundStyle(GK.ledAmber)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.black.opacity(0.45))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(GK.gold.opacity(0.7), lineWidth: 1))
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                ArcadeButton(title: "+", disabled: !session.canSpin) { session.shiftBet(1) }
-                    .frame(width: 54)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("stake-button")
                 ArcadeButton(
                     title: session.turbo ? "TURBO" : "TURBO",
                     fill: session.turbo ? GK.goldFill : GK.navyFill,
@@ -180,23 +220,25 @@ struct SlotGameView: View {
                     title: session.spinning ? "DREHT…" : "START",
                     fill: GK.goldFill,
                     foreground: .black,
-                    disabled: !session.canSpin || session.spinning
+                    disabled: !session.canSpin || session.spinning,
+                    identifier: "start-button"
                 ) { session.spinTapped() }
                 ArcadeButton(
                     title: "RISIKO",
                     fill: GK.redFill,
-                    disabled: !session.risikoEnabled
+                    disabled: !session.risikoEnabled,
+                    identifier: "risiko-button"
                 ) { session.openChooser() }
                 .shadow(color: session.risikoEnabled ? GK.crimson.opacity(0.7) : .clear, radius: 8)
             }
             HStack(spacing: 8) {
                 if session.phase == .presenting && session.pendingWin > 0 {
-                    ArcadeButton(title: "EINSAMMELN", fill: GK.navyFill) { session.takeWin() }
+                    ArcadeButton(title: "EINSAMMELN", fill: GK.navyFill, identifier: "collect-button") { session.takeWin() }
                 }
                 if let left = session.autoplayLeft {
-                    ArcadeButton(title: "STOP \(left)", fill: GK.redFill) { session.stopAutoplayNow() }
+                    ArcadeButton(title: "STOP \(left)", fill: GK.redFill, identifier: "auto-button") { session.stopAutoplayNow() }
                 } else {
-                    ArcadeButton(title: "AUTO", disabled: !session.canSpin) { session.overlay = .autoMenu }
+                    ArcadeButton(title: "AUTO", disabled: !session.canSpin, identifier: "auto-button") { session.overlay = .autoMenu }
                 }
             }
         }
@@ -242,6 +284,12 @@ struct SlotGameView: View {
             )
         case .paytable:
             PaytableOverlay(game: session.game) { session.overlay = .none }
+        case .stake:
+            StakePicker(current: session.totalBet) { amount in
+                session.selectBet(amount)
+            } onClose: {
+                session.overlay = .none
+            }
         case .autoMenu:
             AutoMenuOverlay(
                 onPick: { count in session.startAutoplay(count) },
@@ -304,6 +352,39 @@ private struct PaytableOverlay: View {
                 }
             }
             .padding(16)
+        }
+    }
+}
+
+private struct StakePicker: View {
+    let current: Int
+    let onPick: (Int) -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+            Panel {
+                VStack(spacing: 8) {
+                    Text("EINSATZ WÄHLEN")
+                        .font(.system(size: 22, weight: .black, design: .serif))
+                        .foregroundStyle(GK.gold)
+                    Text("Nur Spielgeld. Höherer Einsatz, höhere Kronentaler-Gewinne.")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(GK.ivory.opacity(0.75))
+                        .multilineTextAlignment(.center)
+                    ForEach(WalletStore.betSteps, id: \.self) { step in
+                        ArcadeButton(
+                            title: "\(KT.string(step)) KT",
+                            fill: step == current ? GK.goldFill : GK.navyFill,
+                            foreground: step == current ? .black : GK.ivory,
+                            identifier: "stake-\(step)"
+                        ) { onPick(step) }
+                    }
+                    ArcadeButton(title: "SCHLIESSEN", fill: GK.redFill, action: onClose)
+                }
+            }
+            .padding(18)
         }
     }
 }

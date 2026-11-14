@@ -14,6 +14,7 @@ struct LobbyView: View {
                     header
                     balancePill
                     bonusCard
+                    LoginWeek()
                     ForEach(GameKind.allCases) { game in
                         GameTile(game: game) { onPlay(game) }
                     }
@@ -44,6 +45,9 @@ struct LobbyView: View {
                     .font(.system(size: 13, weight: .heavy, design: .rounded))
                     .tracking(3.4)
                     .foregroundStyle(GK.ivory.opacity(0.8))
+                Text("Stufe \(wallet.level)")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundStyle(GK.gold)
             }
             Spacer()
         }
@@ -169,6 +173,63 @@ struct LobbyView: View {
     }
 }
 
+private struct LoginWeek: View {
+    @EnvironmentObject private var wallet: WalletStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("LOGIN-BELOHNUNG")
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .foregroundStyle(GK.gold)
+                Spacer()
+                Text(wallet.canClaimDailyBonus ? "Heute offen" : "Serie \(wallet.streak)")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(GK.ivory.opacity(0.7))
+            }
+            HStack(spacing: 6) {
+                ForEach(1...7, id: \.self) { day in
+                    let amount = WalletStore.bonusAmount(forStreak: day)
+                    let current = day == todayIndex
+                    VStack(spacing: 2) {
+                        Text("\(day)")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                        Text(short(amount))
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                    }
+                    .foregroundStyle(current ? Color.black : GK.ivory)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(current ? AnyShapeStyle(GK.goldFill) : AnyShapeStyle(Color.white.opacity(0.08)))
+                    )
+                }
+            }
+            ProgressView(value: wallet.levelProgress)
+                .tint(GK.gold)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(red: 0.18, green: 0.08, blue: 0.38).opacity(0.85))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(GK.gold.opacity(0.45), lineWidth: 1))
+        )
+    }
+
+    private var todayIndex: Int {
+        if wallet.canClaimDailyBonus { return min(max(wallet.streak + 1, 1), 7) }
+        return min(max(wallet.streak, 1), 7)
+    }
+
+    private func short(_ amount: Int) -> String {
+        if amount % 1000 == 0 { return "\(amount / 1000)k" }
+        return String(format: "%.1fk", Double(amount) / 1000.0)
+    }
+}
+
 private struct GameTile: View {
     let game: GameKind
     let action: () -> Void
@@ -220,6 +281,7 @@ private struct GameTile: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("spiel-\(game.rawValue)")
         .onAppear {
             withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true)) {
                 glow = true

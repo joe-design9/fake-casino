@@ -7,43 +7,31 @@ struct SymbolTile: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(LinearGradient(colors: tileColors, startPoint: .top, endPoint: .bottom))
-            SymbolGlyph(id: id)
-                .padding(5)
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.22), .clear],
+                        colors: [Color.white, Color(red: 0.86, green: 0.89, blue: 0.94)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+            Image("sym-\(id)")
+                .resizable()
+                .scaledToFit()
+                .padding(2)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.55), Color.white.opacity(0.05), .clear],
                         startPoint: .top, endPoint: .center
                     )
                 )
                 .allowsHitTesting(false)
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(highlighted ? GK.gold : Color.white.opacity(tense ? 0.45 : 0.14), lineWidth: highlighted ? 2.4 : 1)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(highlighted ? Color(red: 1, green: 0.78, blue: 0.1) : Color(white: 0.62), lineWidth: highlighted ? 3 : 1)
         }
-        .shadow(color: highlighted ? GK.gold.opacity(0.85) : .clear, radius: highlighted ? 8 : 0)
-        .scaleEffect(highlighted ? 1.04 : 1)
+        .shadow(color: highlighted ? Color.yellow.opacity(0.9) : Color.black.opacity(0.18), radius: highlighted ? 7 : 1, y: 1)
+        .scaleEffect(highlighted ? 1.03 : 1)
         .accessibilityLabel(SymbolName.of(id))
-    }
-
-    private var tileColors: [Color] {
-        switch id {
-        case "cherry", "seven":
-            return [Color(red: 0.42, green: 0.06, blue: 0.09), Color(red: 0.14, green: 0.02, blue: 0.04)]
-        case "lemon", "bell", "bar":
-            return [Color(red: 0.40, green: 0.28, blue: 0.06), Color(red: 0.14, green: 0.09, blue: 0.02)]
-        case "plum", "grape", "joker":
-            return [Color(red: 0.28, green: 0.08, blue: 0.36), Color(red: 0.08, green: 0.03, blue: 0.12)]
-        case "melon":
-            return [Color(red: 0.08, green: 0.32, blue: 0.16), Color(red: 0.03, green: 0.10, blue: 0.06)]
-        case "book", "pharaoh", "eye":
-            return [Color(red: 0.36, green: 0.22, blue: 0.06), Color(red: 0.10, green: 0.06, blue: 0.02)]
-        case "star":
-            return [Color(red: 0.18, green: 0.16, blue: 0.36), Color(red: 0.05, green: 0.04, blue: 0.12)]
-        default:
-            return [Color(white: 0.18), Color(white: 0.06)]
-        }
     }
 }
 

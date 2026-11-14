@@ -8,6 +8,7 @@ enum CabinetOverlay: Equatable {
     case cards
     case celebration(mega: Bool)
     case paytable
+    case stake
     case autoMenu
     case refill
 }
@@ -66,7 +67,8 @@ final class SlotSession: ObservableObject {
         self.game = game
         self.wallet = wallet
         self.scripted = shot != nil
-        self.grid = (0..<5).map { _ in ["cherry", "lemon", "plum"] }
+        self.grid = (0..<game.reelCount).map { _ in ["cherry", "lemon", "plum"] }
+        if LaunchFlags.uiTest { turbo = true }
         if let shot {
             apply(shot)
         }
@@ -81,6 +83,14 @@ final class SlotSession: ObservableObject {
         if phase == .presenting || overlay == .ladder || overlay == .cards || overlay == .choose {
             collect(keepOverlay: false)
         }
+    }
+
+    func selectBet(_ amount: Int) {
+        guard canSpin else { return }
+        if let index = WalletStore.betSteps.firstIndex(of: amount) {
+            betIndex = index
+        }
+        overlay = .none
     }
 
     func shiftBet(_ delta: Int) {
@@ -231,7 +241,7 @@ final class SlotSession: ObservableObject {
             SoundEngine.shared.stop()
         }
         Haptics.reel()
-        if stoppedReels >= 5, let waiter = stopWaiter {
+        if stoppedReels >= grid.count, let waiter = stopWaiter {
             stopWaiter = nil
             waiter.resume()
         }
@@ -338,8 +348,8 @@ final class SlotSession: ObservableObject {
         }
 
         if autoplayLeft != nil {
-            let pause: UInt64 = multiple >= 15 ? 1_500_000_000 : 650_000_000
-            try? await Task.sleep(nanoseconds: turbo ? pause / 2 : pause)
+        let pause: UInt64 = LaunchFlags.uiTest ? 60_000_000 : (multiple >= 15 ? 1_500_000_000 : 650_000_000)
+        try? await Task.sleep(nanoseconds: LaunchFlags.uiTest ? pause : (turbo ? pause / 2 : pause))
             if featureTriggered || multiple >= 15 { stopAutoplay = true }
             collect(keepOverlay: false)
         } else if pendingWin > 0 {
@@ -357,21 +367,20 @@ final class SlotSession: ObservableObject {
         stoppedReels = 0
         spinning = true
         spinID += 1
-        let windup: UInt64 = turbo ? 160_000_000 : 380_000_000
+        let windup: UInt64 = LaunchFlags.uiTest ? 40_000_000 : (turbo ? 160_000_000 : 380_000_000)
         try? await Task.sleep(nanoseconds: windup)
         spinning = false
+        let needed = max(1, grid.count)
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            if stoppedReels >= 5 {
+            if stoppedReels >= needed {
                 continuation.resume()
             } else {
                 stopWaiter = continuation
-                Task {
-                    try? await Task.sleep(nanoseconds: 8_000_000_000)
-                    await MainActor.run {
-                        if let waiter = self.stopWaiter {
-                            self.stopWaiter = nil
-                            waiter.resume()
-                        }
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    if let waiter = self.stopWaiter {
+                        self.stopWaiter = nil
+                        waiter.resume()
                     }
                 }
             }
@@ -425,10 +434,8 @@ final class SlotSession: ObservableObject {
         case .fruitWin:
             grid = [
                 ["cherry", "bell", "lemon"],
-                ["lemon", "bell", "plum"],
-                ["grape", "bell", "cherry"],
-                ["plum", "melon", "bar"],
-                ["lemon", "grape", "cherry"]
+                ["lemon", "bell", "orange"],
+                ["plum", "bell", "cherry"]
             ]
             let evaluated = FruchtfeuerEngine.evaluate(grid: grid, totalBet: totalBet)
             lineWins = evaluated.lineWins
@@ -494,15 +501,13 @@ final class SlotSession: ObservableObject {
         case .megawin:
             grid = [
                 ["cherry", "seven", "lemon"],
-                ["lemon", "seven", "plum"],
-                ["grape", "seven", "cherry"],
-                ["plum", "seven", "bell"],
-                ["melon", "seven", "bar"]
+                ["orange", "seven", "plum"],
+                ["lemon", "seven", "bell"]
             ]
-            lineWins = [LineWin(lineIndex: 0, rows: [1, 1, 1, 1, 1], count: 5, symbolID: "seven", amount: 21_000)]
-            highlighted = Set((0..<5).map { GridPosition(reel: $0, row: 1) })
-            pendingWin = 21_000
-            shownWin = 21_000
+            lineWins = [LineWin(lineIndex: 0, rows: [1, 1, 1], count: 3, symbolID: "seven", amount: 5_000)]
+            highlighted = Set((0..<3).map { GridPosition(reel: $0, row: 1) })
+            pendingWin = 5_000
+            shownWin = 5_000
             phase = .presenting
             statusText = "5× Sieben · Linie 1"
             overlay = .celebration(mega: true)

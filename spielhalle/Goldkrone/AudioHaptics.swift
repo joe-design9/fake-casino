@@ -1,78 +1,66 @@
 import AVFoundation
+import Foundation
 import UIKit
 
-/// Short arcade tones synthesized at runtime. Failures stay silent.
+/// Synthesized tones played with AVAudioPlayer.
+///
+/// AVAudioEngine was the on-device crash: `connect(_:to:format:)` with a nil
+/// format raises an Objective-C exception on a real iPhone (the mixer format
+/// is not ready yet). Swift `do/catch` does not catch that, and every button
+/// called into it. AVAudioPlayer only sees PCM bytes and fails softly.
 final class SoundEngine {
     static let shared = SoundEngine()
 
-    private let engine = AVAudioEngine()
-    private let players = (0..<4).map { _ in AVAudioPlayerNode() }
-    private let sampleRate = 44_100.0
-    private var started = false
-    private var attached = false
-    private var unavailable = false
-    private var cursor = 0
+    private var players: [AVAudioPlayer] = []
+    private var sessionReady = false
+    private let sampleRate = 22_050
 
     private init() {}
 
-    /// Reads the persisted toggle directly so playback stays off the main-actor wallet.
     private var enabled: Bool {
+        if ProcessInfo.processInfo.arguments.contains("-uitest") { return false }
         let key = "goldkrone.sound"
         if UserDefaults.standard.object(forKey: key) == nil { return true }
         return UserDefaults.standard.bool(forKey: key)
     }
 
-    func click() { blip(freq: 880, seconds: 0.045, amp: 0.12) }
-    func spin() { noise(seconds: 0.32, amp: 0.18) }
-    func stop() { blip(freq: 140, seconds: 0.09, amp: 0.35, decay: 28) }
-    func tense() { blip(freq: 620, seconds: 0.12, amp: 0.16, decay: 8) }
-    func win() { chord([523, 659, 784], seconds: 0.42) }
-    func bigWin() { chord([523, 659, 784, 1046], seconds: 0.7) }
-    func mega() { chord([392, 523, 659, 784, 1046, 1318], seconds: 1.05) }
-    func risk() { blip(freq: 340, seconds: 0.08, amp: 0.2, decay: 18) }
-    func riskWin() { chord([587, 880], seconds: 0.28) }
-    func riskLose() { blip(freq: 110, seconds: 0.28, amp: 0.4, decay: 6) }
-    func bonus() { chord([523, 659, 784, 1046], seconds: 0.55) }
+    func click() { tone([(880, 0, 0.04, 0.2)]) }
+    func spin() { noise(seconds: 0.22) }
+    func stop() { tone([(140, 0, 0.08, 0.45)]) }
+    func tense() { tone([(640, 0, 0.1, 0.2)]) }
+    func win() { tone([(523, 0, 0.18, 0.25), (659, 0.06, 0.18, 0.25), (784, 0.12, 0.22, 0.25)]) }
+    func bigWin() { tone([(523, 0, 0.2, 0.22), (659, 0.08, 0.2, 0.22), (784, 0.16, 0.22, 0.22), (1046, 0.24, 0.28, 0.22)]) }
+    func mega() { tone([(392, 0, 0.25, 0.2), (523, 0.08, 0.25, 0.2), (659, 0.16, 0.25, 0.2), (784, 0.24, 0.3, 0.2), (1046, 0.32, 0.35, 0.2)]) }
+    func risk() { tone([(330, 0, 0.07, 0.3)]) }
+    func riskWin() { tone([(587, 0, 0.12, 0.3), (880, 0.08, 0.16, 0.3)]) }
+    func riskLose() { tone([(110, 0, 0.22, 0.4)]) }
+    func bonus() { tone([(523, 0, 0.16, 0.25), (659, 0.1, 0.16, 0.25), (784, 0.2, 0.22, 0.25)]) }
 
-    private func blip(freq: Double, seconds: Double, amp: Double, decay: Double = 22) {
-        schedule(seconds: seconds) { t in
-            sin(2 * Double.pi * freq * t) * exp(-t * decay) * amp
-        }
-    }
-
-    private func chord(_ notes: [Double], seconds: Double) {
+    private func tone(_ notes: [(freq: Double, start: Double, length: Double, amp: Double)]) {
+        let seconds = notes.map { $0.start + $0.length }.max() ?? 0.1
         schedule(seconds: seconds) { t in
             var sum = 0.0
-            for (index, freq) in notes.enumerated() {
-                let start = Double(index) * 0.045
-                let local = t - start
-                if local >= 0 {
-                    sum += sin(2 * Double.pi * freq * local) * exp(-local * 4.5) * 0.16
-                }
+            for note in notes {
+                let local = t - note.start
+                guard local >= 0, local <= note.length else { continue }
+                sum += sin(2 * Double.pi * note.freq * local) * exp(-local * 8) * note.amp
             }
             return sum
         }
     }
 
-    private func noise(seconds: Double, amp: Double) {
-        var state: UInt32 = 0x123456
+    private func noise(seconds: Double) {
+        var state: UInt32 = 0x1234ABCD
         schedule(seconds: seconds) { t in
             state = state &* 1664525 &+ 1013904223
-            let n = Double(state % 2000) / 1000.0 - 1
-            let envelope = sin(Double.pi * min(1, t / seconds))
-            return n * envelope * amp * 0.35
+            let n = Double(Int32(bitPattern: state)) / Double(Int32.max)
+            return n * sin(Double.pi * min(1, t / seconds)) * 0.18
         }
     }
 
-    private func schedule(seconds: Double, sample: @escaping (Double) -> Double) {
-        guard enabled else { return }
-        let run = {
-            self.startIfNeeded()
-            guard self.started, let buffer = self.buffer(seconds: seconds, sample: sample) else { return }
-            let player = self.players[self.cursor % self.players.count]
-            self.cursor += 1
-            player.scheduleBuffer(buffer, at: nil, options: [])
-        }
+    private func schedule(seconds: Double, sample: (Double) -> Double) {
+        guard enabled, seconds > 0, seconds < 3 else { return }
+        let run = { self.play(self.render(seconds: seconds, sample: sample)) }
         if Thread.isMainThread {
             run()
         } else {
@@ -80,54 +68,77 @@ final class SoundEngine {
         }
     }
 
-    private func startIfNeeded() {
-        guard !started, !unavailable else { return }
+    private func render(seconds: Double, sample: (Double) -> Double) -> Data {
+        let frames = max(1, Int(seconds * Double(sampleRate)))
+        var pcm = [Int16]()
+        pcm.reserveCapacity(frames)
+        for frame in 0..<frames {
+            let t = Double(frame) / Double(sampleRate)
+            var value = sample(t)
+            let fade = min(1, t / 0.004) * min(1, (seconds - t) / 0.008)
+            value = max(-1, min(1, value * fade))
+            pcm.append(Int16(value * 32_000))
+        }
+        return wav(pcm: pcm)
+    }
+
+    private func play(_ data: Data) {
+        prepareSession()
+        guard let player = try? AVAudioPlayer(data: data) else { return }
+        player.prepareToPlay()
+        player.play()
+        players.append(player)
+        players.removeAll { !$0.isPlaying }
+    }
+
+    private func prepareSession() {
+        guard !sessionReady else { return }
+        let session = AVAudioSession.sharedInstance()
         do {
-            let session = AVAudioSession.sharedInstance()
             try session.setCategory(.ambient, options: [.mixWithOthers])
             try session.setActive(true)
-            if !attached {
-                for player in players {
-                    engine.attach(player)
-                    engine.connect(player, to: engine.mainMixerNode, format: nil)
-                }
-                attached = true
-            }
-            if !engine.isRunning {
-                try engine.start()
-            }
-            for player in players where !player.isPlaying {
-                player.play()
-            }
-            started = true
+            sessionReady = true
         } catch {
-            started = false
-            unavailable = true
+            sessionReady = false
         }
     }
 
-    private func buffer(seconds: Double, sample: (Double) -> Double) -> AVAudioPCMBuffer? {
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
-        let frames = AVAudioFrameCount(seconds * sampleRate)
-        guard frames > 0,
-              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
-              let channels = buffer.floatChannelData else { return nil }
-        buffer.frameLength = frames
-        let data = channels[0]
-        for frame in 0..<Int(frames) {
-            let t = Double(frame) / sampleRate
-            var value = sample(t)
-            let fadeIn = min(1, t / 0.004)
-            let fadeOut = min(1, (seconds - t) / 0.012)
-            value *= fadeIn * fadeOut
-            data[frame] = Float(max(-1, min(1, value)))
+    private func wav(pcm: [Int16]) -> Data {
+        let dataSize = pcm.count * 2
+        var data = Data()
+        func append(_ string: String) { data.append(contentsOf: string.utf8) }
+        func append32(_ value: UInt32) {
+            var little = value.littleEndian
+            data.append(Data(bytes: &little, count: 4))
         }
-        return buffer
+        func append16(_ value: UInt16) {
+            var little = value.littleEndian
+            data.append(Data(bytes: &little, count: 2))
+        }
+        append("RIFF")
+        append32(UInt32(36 + dataSize))
+        append("WAVE")
+        append("fmt ")
+        append32(16)
+        append16(1)
+        append16(1)
+        append32(UInt32(sampleRate))
+        append32(UInt32(sampleRate * 2))
+        append16(2)
+        append16(16)
+        append("data")
+        append32(UInt32(dataSize))
+        pcm.withUnsafeBufferPointer { buffer in
+            guard let base = buffer.baseAddress else { return }
+            data.append(Data(bytes: base, count: buffer.count * MemoryLayout<Int16>.size))
+        }
+        return data
     }
 }
 
 enum Haptics {
     private static var enabled: Bool {
+        if ProcessInfo.processInfo.arguments.contains("-uitest") { return false }
         let key = "goldkrone.haptics"
         if UserDefaults.standard.object(forKey: key) == nil { return true }
         return UserDefaults.standard.bool(forKey: key)
@@ -142,12 +153,28 @@ enum Haptics {
     static func lose() { notify(.error) }
 
     private static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        guard enabled else { return }
-        UIImpactFeedbackGenerator(style: style).impactOccurred()
+        let fire = {
+            guard enabled else { return }
+            let generator = UIImpactFeedbackGenerator(style: style)
+            generator.prepare()
+            generator.impactOccurred()
+        }
+        if Thread.isMainThread { fire() } else { DispatchQueue.main.async(execute: fire) }
     }
 
     private static func notify(_ type: UINotificationFeedbackGenerator.FeedbackType) {
-        guard enabled else { return }
-        UINotificationFeedbackGenerator().notificationOccurred(type)
+        let fire = {
+            guard enabled else { return }
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(type)
+        }
+        if Thread.isMainThread { fire() } else { DispatchQueue.main.async(execute: fire) }
+    }
+}
+
+enum LaunchFlags {
+    static var uiTest: Bool {
+        ProcessInfo.processInfo.arguments.contains("-uitest")
     }
 }

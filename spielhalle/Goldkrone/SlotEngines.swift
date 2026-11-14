@@ -50,6 +50,7 @@ enum SymbolName {
         switch id {
         case "cherry": return "Kirsche"
         case "lemon": return "Zitrone"
+        case "orange": return "Orange"
         case "plum": return "Pflaume"
         case "grape": return "Traube"
         case "melon": return "Melone"
@@ -106,8 +107,9 @@ enum RNGDraw {
         return weights[weights.count - 1].0
     }
 
-    static func grid<R: RandomNumberGenerator>(_ rng: inout R, weights: [(String, Int)]) -> [[String]] {
-        (0..<5).map { _ in (0..<3).map { _ in pick(&rng, weights: weights) } }
+    static func grid<R: RandomNumberGenerator>(_ rng: inout R, weights: [(String, Int)], reels: Int = 5) -> [[String]] {
+        let count = max(1, reels)
+        return (0..<count).map { _ in (0..<3).map { _ in pick(&rng, weights: weights) } }
     }
 }
 
@@ -125,6 +127,15 @@ enum Paylines {
         [1, 0, 1, 0, 1]
     ]
     static var five: [[Int]] { Array(ten.prefix(5)) }
+
+    /// Classic 3-reel lines: middle, top, bottom, diagonal down, diagonal up.
+    static let three: [[Int]] = [
+        [1, 1, 1],
+        [0, 0, 0],
+        [2, 2, 2],
+        [0, 1, 2],
+        [2, 1, 0]
+    ]
 }
 
 enum LineEvaluator {
@@ -274,13 +285,22 @@ enum GameKind: String, CaseIterable, Identifiable, Sendable {
 
     var subtitle: String {
         switch self {
-        case .fruchtfeuer: return "10 Linien · Kirsche ab 2"
+        case .fruchtfeuer: return "3 Walzen · 5 Linien"
         case .sphinx: return "Buch-Wild · 10 Freispiele"
         case .joker: return "5 Linien · Joker-Wild"
         }
     }
 
-    var lineCount: Int { self == .joker ? 5 : 10 }
+    var reelCount: Int { self == .fruchtfeuer ? 3 : 5 }
+    var lineCount: Int { self == .sphinx ? 10 : 5 }
+
+    var lines: [[Int]] {
+        switch self {
+        case .fruchtfeuer: return Paylines.three
+        case .joker: return Paylines.five
+        case .sphinx: return Paylines.ten
+        }
+    }
 
     var pool: [String] {
         switch self {
@@ -301,7 +321,7 @@ enum GameKind: String, CaseIterable, Identifiable, Sendable {
     var payNote: String {
         switch self {
         case .fruchtfeuer:
-            return "Gewinne laufen von links und gelten je Linie. Die Kirsche zahlt schon ab zwei Symbolen. Zahlen sind Vielfache des Linieneinsatzes."
+            return "Klassiker mit 3 Walzen und 5 Linien. Gewinne laufen von links. Die Kirsche zahlt ab zwei Symbolen. Zahlen sind Vielfache des Linieneinsatzes."
         case .sphinx:
             return "Das Buch ist Wild und Scatter. Drei oder mehr Bücher zahlen den Scatter (× Gesamteinsatz: 3 / 14 / 55 / 140) und starten 10 Freispiele mit einem zufälligen Expandier-Symbol. Im Freispiel zahlt das Symbol auf allen Linien, sobald es auf genug Walzen liegt, und kann neu ausgelöst werden."
         case .joker:
@@ -335,21 +355,21 @@ enum GameKind: String, CaseIterable, Identifiable, Sendable {
 }
 
 enum FruchtfeuerEngine {
-    static let order = ["seven", "bar", "bell", "melon", "grape", "plum", "lemon", "cherry"]
+    /// Classic 3-reel fruit machine. Pays are multiples of the line bet.
+    /// Tuned for ~95.3% RTP and ~29% hits over a seeded million spins.
+    static let order = ["seven", "bell", "melon", "plum", "orange", "lemon", "cherry"]
     static let weights: [(String, Int)] = [
-        ("seven", 3), ("bar", 4), ("bell", 6), ("melon", 8),
-        ("grape", 9), ("plum", 11), ("lemon", 13), ("cherry", 12)
+        ("seven", 2), ("bell", 5), ("melon", 7), ("plum", 9),
+        ("orange", 11), ("lemon", 12), ("cherry", 14)
     ]
-    /// Multiples of the line bet. Tuned for ~94.5% RTP and ~31% hits.
     static let pay: [String: [Int: Int]] = [
-        "seven": [3: 280, 4: 700, 5: 2100],
-        "bar": [3: 140, 4: 350, 5: 1050],
-        "bell": [3: 70, 4: 175, 5: 530],
-        "melon": [3: 42, 4: 105, 5: 320],
-        "grape": [3: 28, 4: 70, 5: 210],
-        "plum": [3: 21, 4: 53, 5: 160],
-        "lemon": [3: 14, 4: 35, 5: 105],
-        "cherry": [2: 7, 3: 18, 4: 42, 5: 105]
+        "seven": [3: 250],
+        "bell": [3: 95],
+        "melon": [3: 58],
+        "plum": [3: 35],
+        "orange": [3: 23],
+        "lemon": [3: 16],
+        "cherry": [2: 4, 3: 19]
     ]
 
     static var payRows: [PayRow] {
@@ -359,13 +379,13 @@ enum FruchtfeuerEngine {
     }
 
     static func evaluate(grid: [[String]], totalBet: Int) -> (lineWins: [LineWin], total: Int) {
-        let lineBet = totalBet / 10
-        let wins = LineEvaluator.plain(grid: grid, lines: Paylines.ten, pay: pay, lineBet: lineBet)
+        let lineBet = max(1, totalBet / 5)
+        let wins = LineEvaluator.plain(grid: grid, lines: Paylines.three, pay: pay, lineBet: lineBet)
         return (wins, wins.reduce(0) { $0 + $1.amount })
     }
 
     static func spin<R: RandomNumberGenerator>(totalBet: Int, rng: inout R) -> RoundResult {
-        let grid = RNGDraw.grid(&rng, weights: weights)
+        let grid = RNGDraw.grid(&rng, weights: weights, reels: 3)
         let evaluated = evaluate(grid: grid, totalBet: totalBet)
         return RoundResult(
             grid: grid, lineWins: evaluated.lineWins, scatterCount: 0, scatterWin: 0,

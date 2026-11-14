@@ -89,6 +89,13 @@ final class WalletStore: ObservableObject {
         balance < Self.minimumBet
     }
 
+    /// Cosmetic play-money level. One stage every 30 paid spins.
+    var level: Int { 1 + totalSpins / 30 }
+
+    var levelProgress: Double {
+        Double(totalSpins % 30) / 30.0
+    }
+
     /// Amount the next claim will pay, including the streak step.
     var upcomingBonus: Int {
         Self.bonusAmount(forStreak: previewStreak)
@@ -103,9 +110,9 @@ final class WalletStore: ObservableObject {
 
     private init() {
         let shot = Screenshot.current
-        persist = shot == nil
-        if let shot {
-            balance = shot == .lobby ? Self.startBalance : 8_400
+        persist = shot == nil && !LaunchFlags.uiTest
+        if shot != nil || LaunchFlags.uiTest {
+            balance = shot == .lobby || shot == nil ? (LaunchFlags.uiTest ? 50_000 : Self.startBalance) : 8_400
             totalSpins = shot == .lobby ? 0 : 42
             totalBet = shot == .lobby ? 0 : 4_200
             totalWon = shot == .lobby ? 0 : 3_900
@@ -113,8 +120,8 @@ final class WalletStore: ObservableObject {
             streak = shot == .lobby ? 0 : 3
             lastBonusStamp = 0
             records = [:]
-            soundOn = true
-            hapticsOn = true
+            soundOn = !LaunchFlags.uiTest
+            hapticsOn = !LaunchFlags.uiTest
             disclaimerAccepted = true
             return
         }

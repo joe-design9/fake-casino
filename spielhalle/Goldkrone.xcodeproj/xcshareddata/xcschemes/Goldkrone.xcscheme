@@ -40,6 +40,17 @@
                ReferencedContainer = "container:Goldkrone.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "GK0000000000000000000042"
+               BuildableName = "GoldkroneUITests.xctest"
+               BlueprintName = "GoldkroneUITests"
+               ReferencedContainer = "container:Goldkrone.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

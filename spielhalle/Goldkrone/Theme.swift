@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum GK {
-    static let ink = Color(red: 0.025, green: 0.04, blue: 0.075)
+    static let ink = Color(red: 0.02, green: 0.06, blue: 0.22)
     static let navy = Color(red: 0.07, green: 0.10, blue: 0.16)
     static let panel = Color(red: 0.11, green: 0.14, blue: 0.22)
     static let gold = Color(red: 0.98, green: 0.82, blue: 0.42)
@@ -47,8 +47,8 @@ struct ArcadeBackground: View {
         ZStack {
             GK.ink
             RadialGradient(
-                colors: [Color(red: 0.28, green: 0.16, blue: 0.04).opacity(0.85), .clear],
-                center: .top, startRadius: 10, endRadius: 460
+                colors: [Color(red: 0.12, green: 0.28, blue: 0.72).opacity(0.9), Color(red: 0.02, green: 0.05, blue: 0.2)],
+                center: .center, startRadius: 20, endRadius: 520
             )
             RadialGradient(
                 colors: [GK.crimson.opacity(0.22), .clear],
@@ -156,6 +156,7 @@ struct ArcadeButton: View {
     var fill: LinearGradient = GK.navyFill
     var foreground: Color = GK.ivory
     var disabled: Bool = false
+    var identifier: String? = nil
     let action: () -> Void
 
     var body: some View {
@@ -201,6 +202,7 @@ struct ArcadeButton: View {
         }
         .buttonStyle(.plain)
         .disabled(disabled)
+        .accessibilityIdentifier(identifier ?? title)
     }
 }
 

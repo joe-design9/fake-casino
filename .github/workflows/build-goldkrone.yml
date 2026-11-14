@@ -123,6 +123,7 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath "$PWD/build" \
             -only-testing:GoldkroneTests \
+            -only-testing:GoldkroneUITests \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO
@@ -191,9 +192,9 @@ jobs:
       - name: Publish prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: goldkrone-v1.0.${{ github.run_number }}
+          tag_name: goldkrone-v1.1.0
           target_commitish: ${{ github.sha }}
-          name: GOLDKRONE Spielhalle v1.0.${{ github.run_number }}
+          name: GOLDKRONE Spielhalle v1.1.0
           prerelease: true
           make_latest: false
           fail_on_unmatched_files: true
