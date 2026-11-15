@@ -22,6 +22,7 @@ final class SlotSession: ObservableObject {
     @Published var grid: [[String]]
     @Published var spinning = false
     @Published var spinID = 0
+    @Published var quickStopToken = 0
     @Published var turbo = false
     @Published var betIndex = 3
     @Published var phase: Phase = .idle
@@ -75,6 +76,7 @@ final class SlotSession: ObservableObject {
     }
 
     func shutdown() {
+        SoundEngine.shared.stopReelLoop()
         spinTask?.cancel()
         if let waiter = stopWaiter {
             stopWaiter = nil
@@ -102,6 +104,14 @@ final class SlotSession: ObservableObject {
 
     func toggleTurbo() {
         turbo.toggle()
+    }
+
+    func primaryButton() {
+        if phase == .spinning {
+            quickStopToken += 1
+            return
+        }
+        spinTapped()
     }
 
     func spinTapped() {
@@ -276,7 +286,7 @@ final class SlotSession: ObservableObject {
         shownWin = 0
         pendingWin = 0
         statusText = "Die Walzen laufen"
-        SoundEngine.shared.spin()
+        SoundEngine.shared.startReelLoop()
 
         let round = game.spin(totalBet: totalBet, rng: &rng)
         await animate(to: round.grid, anticipate: game.anticipationReel(in: round.grid), forced: [:])
@@ -367,9 +377,6 @@ final class SlotSession: ObservableObject {
         stoppedReels = 0
         spinning = true
         spinID += 1
-        let windup: UInt64 = LaunchFlags.uiTest ? 40_000_000 : (turbo ? 160_000_000 : 380_000_000)
-        try? await Task.sleep(nanoseconds: windup)
-        spinning = false
         let needed = max(1, grid.count)
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             if stoppedReels >= needed {
@@ -377,7 +384,7 @@ final class SlotSession: ObservableObject {
             } else {
                 stopWaiter = continuation
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                    try? await Task.sleep(nanoseconds: 12_000_000_000)
                     if let waiter = self.stopWaiter {
                         self.stopWaiter = nil
                         waiter.resume()
@@ -385,6 +392,8 @@ final class SlotSession: ObservableObject {
                 }
             }
         }
+        spinning = false
+        SoundEngine.shared.stopReelLoop()
         if !forced.isEmpty {
             forcedReels = forced
         }

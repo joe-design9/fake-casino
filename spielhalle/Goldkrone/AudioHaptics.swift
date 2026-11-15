@@ -12,6 +12,7 @@ final class SoundEngine {
     static let shared = SoundEngine()
 
     private var players: [AVAudioPlayer] = []
+    private var loopPlayer: AVAudioPlayer?
     private var sessionReady = false
     private let sampleRate = 22_050
 
@@ -26,7 +27,7 @@ final class SoundEngine {
 
     func click() { tone([(880, 0, 0.04, 0.2)]) }
     func spin() { noise(seconds: 0.22) }
-    func stop() { tone([(140, 0, 0.08, 0.45)]) }
+    func stop() { tone([(180, 0, 0.045, 0.4), (90, 0, 0.07, 0.35)]) }
     func tense() { tone([(640, 0, 0.1, 0.2)]) }
     func win() { tone([(523, 0, 0.18, 0.25), (659, 0.06, 0.18, 0.25), (784, 0.12, 0.22, 0.25)]) }
     func bigWin() { tone([(523, 0, 0.2, 0.22), (659, 0.08, 0.2, 0.22), (784, 0.16, 0.22, 0.22), (1046, 0.24, 0.28, 0.22)]) }
@@ -35,6 +36,34 @@ final class SoundEngine {
     func riskWin() { tone([(587, 0, 0.12, 0.3), (880, 0.08, 0.16, 0.3)]) }
     func riskLose() { tone([(110, 0, 0.22, 0.4)]) }
     func bonus() { tone([(523, 0, 0.16, 0.25), (659, 0.1, 0.16, 0.25), (784, 0.2, 0.22, 0.25)]) }
+
+    /// Soft click repeating while the reels are in motion.
+    func startReelLoop() {
+        guard enabled else { return }
+        if loopPlayer?.isPlaying == true { return }
+        let data = render(seconds: 0.09) { t in
+            guard t < 0.012 else { return 0 }
+            return sin(2 * Double.pi * 1400 * t) * exp(-t * 180) * 0.22
+        }
+        let play = {
+            self.prepareSession()
+            guard let player = try? AVAudioPlayer(data: data) else { return }
+            player.numberOfLoops = -1
+            player.volume = 0.45
+            player.prepareToPlay()
+            player.play()
+            self.loopPlayer = player
+        }
+        if Thread.isMainThread { play() } else { DispatchQueue.main.async(execute: play) }
+    }
+
+    func stopReelLoop() {
+        let stop = {
+            self.loopPlayer?.stop()
+            self.loopPlayer = nil
+        }
+        if Thread.isMainThread { stop() } else { DispatchQueue.main.async(execute: stop) }
+    }
 
     private func tone(_ notes: [(freq: Double, start: Double, length: Double, amp: Double)]) {
         let seconds = notes.map { $0.start + $0.length }.max() ?? 0.1
@@ -146,7 +175,7 @@ enum Haptics {
     }
 
     static func tap() { impact(.light) }
-    static func reel() { impact(.medium) }
+    static func reel() { impact(.light) }
     static func win() { impact(.rigid) }
     static func big() { notify(.success) }
     static func mega() { notify(.success) }

@@ -66,6 +66,23 @@ final class RTPSimulationTests: XCTestCase {
         }
     }
 
+    func testReelSpinLandsOnWholeCell() {
+        for reel in 0..<5 {
+            for turbo in [false, true] {
+                for anticipate in [false, true] {
+                    let plan = ReelMotion.make(reel: reel, turbo: turbo, anticipate: anticipate, uiTest: false)
+                    XCTAssertEqual(plan.travel, plan.travel.rounded(), accuracy: 0.001)
+                    let end = plan.sample(plan.duration)
+                    XCTAssertEqual(end.pos, plan.travel, accuracy: 0.001)
+                    XCTAssertEqual(end.speed, 0, accuracy: 0.001)
+                    let quick = plan.quickStop(from: plan.travel * 0.4, turbo: turbo)
+                    let stopped = quick.sample(quick.duration)
+                    XCTAssertEqual(stopped.pos, plan.travel, accuracy: 0.001)
+                }
+            }
+        }
+    }
+
     func testLadderAndBonusMath() {
         XCTAssertEqual(LadderMath.amount(base: 700, level: 0), 700)
         XCTAssertEqual(LadderMath.amount(base: 700, level: 1), 1_400)

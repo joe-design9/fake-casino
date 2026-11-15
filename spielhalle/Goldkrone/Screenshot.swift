@@ -9,6 +9,7 @@ enum Screenshot: Equatable {
     case risikoleiter
     case kartenrisiko
     case megawin
+    case spin
 
     static var current: Screenshot? {
         let args = ProcessInfo.processInfo.arguments
@@ -23,6 +24,7 @@ enum Screenshot: Equatable {
         case "risikoleiter": return .risikoleiter
         case "kartenrisiko": return .kartenrisiko
         case "megawin": return .megawin
+        case "spin": return .spin
         default: return .lobby
         }
     }
@@ -30,7 +32,7 @@ enum Screenshot: Equatable {
     var game: GameKind? {
         switch self {
         case .lobby: return nil
-        case .fruitWin, .risikoleiter, .kartenrisiko, .megawin: return .fruchtfeuer
+        case .fruitWin, .risikoleiter, .kartenrisiko, .megawin, .spin: return .fruchtfeuer
         case .bookFreespins: return .sphinx
         case .joker: return .joker
         }

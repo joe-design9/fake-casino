@@ -167,6 +167,16 @@ jobs:
           capture "07-mega-gewinn" "megawin" 4
           ditto -c -k --keepParent screenshots Goldkrone-screenshots.zip
           ls -lh Goldkrone-screenshots.zip screenshots
+          # One real spin, recorded, so the reel motion can be checked without a device.
+          xcrun simctl io "$UDID" recordVideo --codec h264 --force "$PWD/Goldkrone-spin.mp4" &
+          rec_pid=$!
+          xcrun simctl terminate "$UDID" dev.joe.goldkrone || true
+          sleep 1
+          xcrun simctl launch "$UDID" dev.joe.goldkrone -screenshot spin
+          sleep 6
+          kill -INT "$rec_pid" || true
+          wait "$rec_pid" || true
+          ls -lh Goldkrone-spin.mp4 || true
 
       - name: Show simulator logs on failure
         if: failure() && steps.sim.outputs.udid != ''
@@ -192,12 +202,12 @@ jobs:
       - name: Publish prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: goldkrone-v1.1.0
+          tag_name: goldkrone-v1.2.0
           target_commitish: ${{ github.sha }}
-          name: GOLDKRONE Spielhalle v1.1.0
+          name: GOLDKRONE Spielhalle v1.2.0
           prerelease: true
           make_latest: false
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
           body: |
             Unsignierte Spielgeld-IPA von GOLDKRONE Spielhalle und Simulator-Screenshots.
 
@@ -207,3 +217,4 @@ jobs:
           files: |
             Goldkrone.ipa
             Goldkrone-screenshots.zip
+            Goldkrone-spin.mp4

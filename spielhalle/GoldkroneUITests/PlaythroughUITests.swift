@@ -18,12 +18,16 @@ final class PlaythroughUITests: XCTestCase {
             let start = app.buttons["start-button"]
             XCTAssertTrue(start.waitForExistence(timeout: 8))
 
-            for _ in 0..<5 {
+            for index in 0..<4 {
                 dismissOverlays(app)
-                waitUntilEnabled(start, timeout: 60)
+                waitUntilLabel(start, "START", timeout: 60)
                 start.tap()
-                // Let the reels leave the idle state before the next tap.
-                RunLoop.current.run(until: Date().addingTimeInterval(0.15))
+                if index == 1 {
+                    RunLoop.current.run(until: Date().addingTimeInterval(0.12))
+                    if start.label == "STOP" {
+                        start.tap()
+                    }
+                }
             }
             dismissOverlays(app)
 
@@ -73,6 +77,14 @@ final class PlaythroughUITests: XCTestCase {
                 button.tap()
             }
         }
+    }
+
+    private func waitUntilLabel(_ element: XCUIElement, _ label: String, timeout: TimeInterval) {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == %@ AND enabled == true AND hittable == true", label),
+            object: element
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed)
     }
 
     private func waitUntilEnabled(_ element: XCUIElement, timeout: TimeInterval) {

@@ -5,11 +5,14 @@ struct SlotGameView: View {
     @StateObject private var session: SlotSession
     let onExit: () -> Void
     private let scripted: Bool
+    private let autoSpin: Bool
+    @State private var didAutoSpin = false
 
     init(game: GameKind, shot: Screenshot?, onExit: @escaping () -> Void) {
         _session = StateObject(wrappedValue: SlotSession(game: game, shot: shot, wallet: WalletStore.shared))
         self.onExit = onExit
         self.scripted = shot != nil
+        self.autoSpin = shot == .spin
     }
 
     var body: some View {
@@ -54,6 +57,13 @@ struct SlotGameView: View {
                     Spacer()
                     PlayMoneyFooter()
                 }
+            }
+        }
+        .onAppear {
+            guard autoSpin, !didAutoSpin else { return }
+            didAutoSpin = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                session.spinTapped()
             }
         }
         .onDisappear {
@@ -161,6 +171,7 @@ struct SlotGameView: View {
                 spinning: session.spinning,
                 spinID: session.spinID,
                 turbo: session.turbo,
+                quickStopToken: session.quickStopToken,
                 anticipateFrom: session.anticipateFrom,
                 highlighted: session.highlighted,
                 winLines: session.lineWins,
@@ -217,12 +228,12 @@ struct SlotGameView: View {
             }
             HStack(spacing: 8) {
                 ArcadeButton(
-                    title: session.spinning ? "DREHT…" : "START",
+                    title: session.spinning ? "STOP" : "START",
                     fill: GK.goldFill,
                     foreground: .black,
-                    disabled: !session.canSpin || session.spinning,
+                    disabled: !session.canSpin && !session.spinning,
                     identifier: "start-button"
-                ) { session.spinTapped() }
+                ) { session.primaryButton() }
                 ArcadeButton(
                     title: "RISIKO",
                     fill: GK.redFill,
