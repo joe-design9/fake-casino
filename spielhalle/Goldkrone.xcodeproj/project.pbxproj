@@ -1,0 +1,481 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		GK0000000000000000000029 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = GK0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = GK0000000000000000000006;
+			remoteInfo = Goldkrone;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		GK0000000000000000000005 /* Goldkrone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Goldkrone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		GK0000000000000000000021 /* GoldkroneTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GoldkroneTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		GK0000000000000000000040 /* GoldkroneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GoldkroneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		GK0000000000000000000004 /* Goldkrone */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Goldkrone;
+			sourceTree = "<group>";
+		};
+		GK0000000000000000000020 /* GoldkroneTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GoldkroneTests;
+			sourceTree = "<group>";
+		};
+		GK0000000000000000000041 /* GoldkroneUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GoldkroneUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		GK0000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GK0000000000000000000024 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		GK0000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				GK0000000000000000000004 /* Goldkrone */,
+				GK0000000000000000000020 /* GoldkroneTests */,
+				GK0000000000000000000041 /* GoldkroneUITests */,
+				GK0000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		GK0000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				GK0000000000000000000005 /* Goldkrone.app */,
+				GK0000000000000000000021 /* GoldkroneTests.xctest */,
+				GK0000000000000000000040 /* GoldkroneUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		GK0000000000000000000006 /* Goldkrone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = GK0000000000000000000013 /* Build configuration list for PBXNativeTarget "Goldkrone" */;
+			buildPhases = (
+				GK0000000000000000000007 /* Sources */,
+				GK0000000000000000000008 /* Frameworks */,
+				GK0000000000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				GK0000000000000000000004 /* Goldkrone */,
+			);
+			name = Goldkrone;
+			productName = Goldkrone;
+			productReference = GK0000000000000000000005 /* Goldkrone.app */;
+			productType = "com.apple.product-type.application";
+		};
+		GK0000000000000000000022 /* GoldkroneTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = GK0000000000000000000026 /* Build configuration list for PBXNativeTarget "GoldkroneTests" */;
+			buildPhases = (
+				GK0000000000000000000023 /* Sources */,
+				GK0000000000000000000024 /* Frameworks */,
+				GK0000000000000000000025 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				GK0000000000000000000030 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				GK0000000000000000000020 /* GoldkroneTests */,
+			);
+			name = GoldkroneTests;
+			productName = GoldkroneTests;
+			productReference = GK0000000000000000000021 /* GoldkroneTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		GK0000000000000000000042 /* GoldkroneUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = GK0000000000000000000046 /* Build configuration list for PBXNativeTarget "GoldkroneUITests" */;
+			buildPhases = (
+				GK0000000000000000000043 /* Sources */,
+				GK0000000000000000000044 /* Frameworks */,
+				GK0000000000000000000045 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				GK0000000000000000000050 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				GK0000000000000000000041 /* GoldkroneUITests */,
+			);
+			name = GoldkroneUITests;
+			productName = GoldkroneUITests;
+			productReference = GK0000000000000000000040 /* GoldkroneUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		GK0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					GK0000000000000000000006 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					GK0000000000000000000022 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = GK0000000000000000000006;
+					};
+					GK0000000000000000000042 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = GK0000000000000000000006;
+					};
+				};
+			};
+			buildConfigurationList = GK0000000000000000000010 /* Build configuration list for PBXProject "Goldkrone" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = de;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				de,
+				Base,
+			);
+			mainGroup = GK0000000000000000000002;
+			productRefGroup = GK0000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				GK0000000000000000000006 /* Goldkrone */,
+				GK0000000000000000000022 /* GoldkroneTests */,
+				GK0000000000000000000042 /* GoldkroneUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		GK0000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GK0000000000000000000025 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		GK0000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GK0000000000000000000023 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		GK0000000000000000000030 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = GK0000000000000000000006 /* Goldkrone */;
+			targetProxy = GK0000000000000000000029 /* PBXContainerItemProxy */;
+		};
+		GK0000000000000000000049 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = GK0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = GK0000000000000000000006;
+			remoteInfo = Goldkrone;
+		};
+		GK0000000000000000000050 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = GK0000000000000000000006 /* Goldkrone */;
+			targetProxy = GK0000000000000000000049 /* PBXContainerItemProxy */;
+		};
+		GK0000000000000000000043 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GK0000000000000000000044 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		GK0000000000000000000045 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		GK0000000000000000000011 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		GK0000000000000000000012 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		GK0000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Goldkrone;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		GK0000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Goldkrone;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		GK0000000000000000000027 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Goldkrone.app/Goldkrone";
+			};
+			name = Debug;
+		};
+		GK0000000000000000000028 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Goldkrone.app/Goldkrone";
+			};
+			name = Release;
+		};
+		GK0000000000000000000047 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Goldkrone;
+			};
+			name = Debug;
+		};
+		GK0000000000000000000048 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.joe.goldkrone.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Goldkrone;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		GK0000000000000000000010 /* Build configuration list for PBXProject "Goldkrone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				GK0000000000000000000011 /* Debug */,
+				GK0000000000000000000012 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		GK0000000000000000000013 /* Build configuration list for PBXNativeTarget "Goldkrone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				GK0000000000000000000014 /* Debug */,
+				GK0000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		GK0000000000000000000026 /* Build configuration list for PBXNativeTarget "GoldkroneTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				GK0000000000000000000027 /* Debug */,
+				GK0000000000000000000028 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		GK0000000000000000000046 /* Build configuration list for PBXNativeTarget "GoldkroneUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				GK0000000000000000000047 /* Debug */,
+				GK0000000000000000000048 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = GK0000000000000000000001 /* Project object */;
+}

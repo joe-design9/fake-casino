@@ -5,5 +5,8 @@ build/
 DerivedData/
 Payload/
 MuseCasino.ipa
+Goldkrone.ipa
+Goldkrone-screenshots.zip
+screenshots/
 .DS_Store
 *.muse-github-snapshot-sync.json
