@@ -438,7 +438,7 @@ final class SlotSession: ObservableObject {
     private func apply(_ shot: Screenshot) {
         betIndex = 3
         switch shot {
-        case .lobby:
+        case .lobby, .spin:
             break
         case .fruitWin:
             grid = [
